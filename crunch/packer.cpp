@@ -3,6 +3,7 @@
 #include "GuillotineBinPack.h"
 #include "binary.hpp"
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 using namespace rbp;
@@ -22,6 +23,7 @@ void Packer::Pack(vector<Bitmap*>& bitmaps)
     while (!bitmaps.empty())
     {
         auto bitmap = bitmaps.back();
+		cout << '\t' << bitmaps.size() << endl;
         Rect rect = packer.Insert(bitmap->width + 1, bitmap->height + 1, MaxRectsBinPack::RectBestShortSideFit);
 
         if (rect.width == 0 || rect.height == 0)

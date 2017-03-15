@@ -35,5 +35,6 @@ crunch/Debug/*
 crunch/Release/*
 *.opendb
 *.db
-*.db
 *.suo
+crunch/crunch.VC.db
+crunch/.vs/crunch/v14/.suo

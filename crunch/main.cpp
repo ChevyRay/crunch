@@ -4,12 +4,13 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 #include "tinydir.h"
 #include "bitmap.hpp"
 #include "packer.hpp"
 #include "binary.hpp"
 
-#define PACK_SIZE 1024
+#define PACK_SIZE 4096
 
 using namespace std;
 
@@ -23,13 +24,36 @@ inline void hashCombine(std::size_t& hash, const T& v)
     hash ^= hasher(v) + 0x9e3779b9 + (hash<<6) + (hash>>2);
 }
 
+#if defined _MSC_VER || defined __MINGW32__
+#include <locale>
+#include <codecvt>
+wstring StrToFile(const string& str)
+{
+	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+	return converter.from_bytes(str);
+}
+string FileToStr(const wstring& str)
+{
+	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+	return converter.to_bytes(str);
+}
+#else
+const string& StrToFile(const string& str)
+{
+	return str;
+}
+const string& FileToStr(const string& str)
+{
+	return str;
+}
+#endif
 static void hashFiles(size_t& hash, const string& root)
 {
     static string dot1 = ".";
     static string dot2 = "..";
     
     tinydir_dir dir;
-    tinydir_open(&dir, root.data());
+    tinydir_open(&dir, StrToFile(root.data()).data());
     
     while (dir.has_next)
     {
@@ -38,10 +62,10 @@ static void hashFiles(size_t& hash, const string& root)
         
         if (file.is_dir)
         {
-            if (dot1 != file.name && dot2 != file.name)
-                hashFiles(hash, file.path);
+            if (dot1 != FileToStr(file.name) && dot2 != FileToStr(file.name))
+                hashFiles(hash, FileToStr(file.path));
         }
-        else if (strcmp(file.extension, "png") == 0)
+        else if (FileToStr(file.extension) == "png")
         {
             ifstream stream(file.path, ios::binary | ios::ate);
             streamsize size = stream.tellg();
@@ -99,7 +123,7 @@ static void loadBitmaps(const string& root, bool premultiply, bool trim)
     static string dot2 = "..";
     
     tinydir_dir dir;
-    tinydir_open(&dir, root.data());
+    tinydir_open(&dir, StrToFile(root.data()).data());
     
     while (dir.has_next)
     {
@@ -108,12 +132,13 @@ static void loadBitmaps(const string& root, bool premultiply, bool trim)
         
         if (file.is_dir)
         {
-            if (dot1 != file.name && dot2 != file.name)
-                loadBitmaps(file.path, premultiply, trim);
+            if (dot1 != FileToStr(file.name) && dot2 != FileToStr(file.name))
+                loadBitmaps(FileToStr(file.path), premultiply, trim);
         }
-        else if (strcmp(file.extension, "png") == 0)
+        else if (FileToStr(file.extension) == "png")
         {
-            bitmaps.push_back(new Bitmap(file.path, getFileName(file.path), premultiply, trim));
+			cout << "loading: " << FileToStr(file.path) << endl;
+            bitmaps.push_back(new Bitmap(FileToStr(file.path), getFileName(FileToStr(file.path)), premultiply, trim));
         }
         
         tinydir_next(&dir);
@@ -192,9 +217,11 @@ int main(int argc, const char* argv[])
     //Pack the bitmaps
     while (!bitmaps.empty())
     {
+		cout << "packing atlas..." << endl;
         auto packer = new Packer(PACK_SIZE, PACK_SIZE);
         packer->Pack(bitmaps);
         packers.push_back(packer);
+		cout << "packed size: " << packer->width << 'x' << packer->height << endl;
     }
     
     //Remove old files
