@@ -36,3 +36,4 @@ crunch/Release/*
 *.opendb
 *.db
 *.db
+*.suo
