@@ -172,9 +172,8 @@ int main(int argc, const char* argv[])
     hashFiles(hash, inputDir);
     
     //Load the old hash
-    string hashFile = outputDir + name + ".hash";
     size_t oldHash;
-    if (loadHash(oldHash, hashFile))
+    if (loadHash(oldHash, outputDir + name + ".hash"))
     {
         if (hash == oldHash)
         {
@@ -199,6 +198,7 @@ int main(int argc, const char* argv[])
     }
     
     //Remove old files
+    RemoveFile(outputDir + name + ".hash");
     RemoveFile(outputDir + name + ".bin");
     RemoveFile(outputDir + name + ".xml");
     for (size_t i = 0; i < 16; ++i)
@@ -265,7 +265,7 @@ int main(int argc, const char* argv[])
     }
     
     //Save the new hash
-    saveHash(hash, hashFile);
+    saveHash(hash, outputDir + name + ".hash");
     
     return EXIT_SUCCESS;
 }
