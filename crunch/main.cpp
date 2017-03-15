@@ -14,6 +14,11 @@
 
 using namespace std;
 
+static bool binary;
+static bool binaryXml;
+static bool premultiply;
+static bool trim;
+static bool verbose;
 static vector<Bitmap*> bitmaps;
 static vector<Packer*> packers;
 
@@ -117,7 +122,7 @@ static string getFileName(const string& path)
         return path.substr(s, d - s);
 }
 
-static void loadBitmaps(const string& root, bool premultiply, bool trim, bool verbose)
+static void loadBitmaps(const string& root, const string& prefix)
 {
     static string dot1 = ".";
     static string dot2 = "..";
@@ -133,14 +138,14 @@ static void loadBitmaps(const string& root, bool premultiply, bool trim, bool ve
         if (file.is_dir)
         {
             if (dot1 != FileToStr(file.name) && dot2 != FileToStr(file.name))
-                loadBitmaps(FileToStr(file.path), premultiply, trim, verbose);
+                loadBitmaps(FileToStr(file.path), prefix + FileToStr(file.name) + "/");
         }
         else if (FileToStr(file.extension) == "png")
         {
             if (verbose)
                 cout << '\t' << FileToStr(file.path) << endl;
             
-            bitmaps.push_back(new Bitmap(FileToStr(file.path), getFileName(FileToStr(file.path)), premultiply, trim));
+            bitmaps.push_back(new Bitmap(FileToStr(file.path), prefix + getFileName(FileToStr(file.path)), premultiply, trim));
         }
         
         tinydir_next(&dir);
@@ -177,11 +182,11 @@ int main(int argc, const char* argv[])
     outputDir += '/';
     
     //Get the options
-    bool binary = false;
-    bool binaryXml = false;
-    bool premultiply = false;
-    bool trim = false;
-    bool verbose = false;
+    binary = false;
+    binaryXml = false;
+    premultiply = false;
+    trim = false;
+    verbose = false;
     for (int i = 3; i < argc; ++i)
     {
         string arg = argv[i];
@@ -215,7 +220,7 @@ int main(int argc, const char* argv[])
     //Load the bitmaps and sort them by area
     if (verbose)
         cout << "loading images..." << endl;
-    loadBitmaps(inputDir, premultiply, trim, verbose);
+    loadBitmaps(inputDir, "");
     sort(bitmaps.begin(), bitmaps.end(), [](const Bitmap* a, const Bitmap* b) {
         return (a->width * a->height) < (b->width * b->height);
     });
