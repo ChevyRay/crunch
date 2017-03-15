@@ -27,3 +27,9 @@
 *.exe
 *.out
 *.app
+*.ilk
+*.pdb
+*.tlog
+*.log
+crunch/Debug/*
+crunch/Release/*
