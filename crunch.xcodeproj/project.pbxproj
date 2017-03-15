@@ -14,6 +14,7 @@
 		1B761F8E1E78ECBE00E2E4FC /* Rect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1B761F8A1E78ECBE00E2E4FC /* Rect.cpp */; };
 		1BD1CE521E78EC44009C02A2 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1BD1CE511E78EC44009C02A2 /* main.cpp */; };
 		1BD766C51E79241600523C03 /* lodepng.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1BD766C31E79241600523C03 /* lodepng.cpp */; };
+		1BD766CA1E79C94900523C03 /* binary.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1BD766C81E79C94900523C03 /* binary.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -40,12 +41,13 @@
 		1B761F891E78ECBE00E2E4FC /* MaxRectsBinPack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MaxRectsBinPack.h; sourceTree = "<group>"; };
 		1B761F8A1E78ECBE00E2E4FC /* Rect.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Rect.cpp; sourceTree = "<group>"; };
 		1B761F8B1E78ECBE00E2E4FC /* Rect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Rect.h; sourceTree = "<group>"; };
-		1B761F901E78ED0700E2E4FC /* stb_image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stb_image.h; sourceTree = "<group>"; };
 		1B761F911E78EE8000E2E4FC /* pugiconfig.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = pugiconfig.hpp; sourceTree = "<group>"; };
 		1BD1CE4E1E78EC44009C02A2 /* crunch */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = crunch; sourceTree = BUILT_PRODUCTS_DIR; };
 		1BD1CE511E78EC44009C02A2 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		1BD766C31E79241600523C03 /* lodepng.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = lodepng.cpp; sourceTree = "<group>"; };
 		1BD766C41E79241600523C03 /* lodepng.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lodepng.h; sourceTree = "<group>"; };
+		1BD766C81E79C94900523C03 /* binary.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = binary.cpp; sourceTree = "<group>"; };
+		1BD766C91E79C94900523C03 /* binary.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = binary.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,12 +90,13 @@
 				1B761F911E78EE8000E2E4FC /* pugiconfig.hpp */,
 				1B761F8A1E78ECBE00E2E4FC /* Rect.cpp */,
 				1B761F8B1E78ECBE00E2E4FC /* Rect.h */,
-				1B761F901E78ED0700E2E4FC /* stb_image.h */,
 				1B08AF181E78F91700CD496C /* tinydir.h */,
 				1B08AF191E79026300CD496C /* bitmap.cpp */,
 				1B08AF1A1E79026300CD496C /* bitmap.hpp */,
 				1B08AF1C1E7911B200CD496C /* packer.cpp */,
 				1B08AF1D1E7911B200CD496C /* packer.hpp */,
+				1BD766C81E79C94900523C03 /* binary.cpp */,
+				1BD766C91E79C94900523C03 /* binary.hpp */,
 			);
 			path = crunch;
 			sourceTree = "<group>";
@@ -155,6 +158,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1BD766CA1E79C94900523C03 /* binary.cpp in Sources */,
 				1B761F8D1E78ECBE00E2E4FC /* MaxRectsBinPack.cpp in Sources */,
 				1B761F8C1E78ECBE00E2E4FC /* GuillotineBinPack.cpp in Sources */,
 				1BD1CE521E78EC44009C02A2 /* main.cpp in Sources */,

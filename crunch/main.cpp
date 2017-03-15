@@ -7,6 +7,7 @@
 #include "tinydir.h"
 #include "bitmap.hpp"
 #include "packer.hpp"
+#include "binary.hpp"
 
 #define PACK_SIZE 1024
 
@@ -92,7 +93,7 @@ static string getFileName(const string& path)
         return path.substr(s, d - s);
 }
 
-static void loadBitmaps(const string& root)
+static void loadBitmaps(const string& root, bool premultiply, bool trim)
 {
     static string dot1 = ".";
     static string dot2 = "..";
@@ -108,12 +109,11 @@ static void loadBitmaps(const string& root)
         if (file.is_dir)
         {
             if (dot1 != file.name && dot2 != file.name)
-                loadBitmaps(file.path);
+                loadBitmaps(file.path, premultiply, trim);
         }
         else if (strcmp(file.extension, "png") == 0)
         {
-            cout << file.path << endl;
-            bitmaps.push_back(new Bitmap(file.path, getFileName(file.path)));
+            bitmaps.push_back(new Bitmap(file.path, getFileName(file.path), premultiply, trim));
         }
         
         tinydir_next(&dir);
@@ -129,18 +129,38 @@ int main(int argc, const char* argv[])
         cout << argv[i] << ' ';
     cout << endl;
     
-    if (argc != 3)
+    if (argc < 3)
     {
-        cerr << "expected 3 parameters \"crunch [INPUT DIRECTORY] [OUTPUT PREFIX]\"" << endl;
+        cerr << "invalid input, expected: \"crunch [INPUT DIRECTORY] [OUTPUT PREFIX] [OPTIONS...]\"" << endl;
         return EXIT_FAILURE;
     }
     
     //Get the input/output directories
     string inputDir = argv[1];
     string outputDir = argv[2];
+    //string inputDir = "/Users/ChevyRay/Desktop/crunch_test/assets/chars";
+    //string outputDir = "/Users/ChevyRay/Desktop/crunch_test/bin";
     string name = getFileName(inputDir);
     inputDir += '/';
     outputDir += '/';
+    
+    //Get the options
+    bool binary = false;
+    bool binaryXml = false;
+    bool premultiply = false;
+    bool trim = false;
+    for (int i = 3; i < argc; ++i)
+    {
+        string arg = argv[i];
+        if (arg == "-b" || arg == "--binary")
+            binary = true;
+        if (arg == "-bx" || arg == "--binaryxml")
+            binaryXml = true;
+        if (arg == "-p" || arg == "--premultiply")
+            premultiply = true;
+        if (arg == "-t" || arg == "--trim")
+            trim = true;
+    }
     
     //Hash the input directory
     size_t hash = 0;
@@ -153,17 +173,16 @@ int main(int argc, const char* argv[])
     {
         if (hash == oldHash)
         {
-            cout << "images have not changed in: " << inputDir << endl;
+            //cout << "images have not changed in: " << inputDir << endl;
+            cout << "atlas is unchanged: " << name << endl;
             return EXIT_SUCCESS;
         }
     }
     
     //Load the bitmaps and sort them by area
-    loadBitmaps(inputDir);
+    loadBitmaps(inputDir, premultiply, trim);
     sort(bitmaps.begin(), bitmaps.end(), [](const Bitmap* a, const Bitmap* b) {
-        int areaA = a->width * a->height;
-        int areaB = b->width * b->height;
-        return areaA > areaB ? -1 : (areaA < areaB ? 1 : 0);
+        return (a->width * a->height) < (b->width * b->height);
     });
     
     //Pack the bitmaps
@@ -174,19 +193,68 @@ int main(int argc, const char* argv[])
         packers.push_back(packer);
     }
     
-    cout << "saving..." << endl;
+    //FORMAT:
+    //num_textures (int16)
+    //TEXTURE:
+    //  name (string)
+    //  num_images (int16)
+    //  IMAGES:
+    //      name (string)
+    //      x, y, fx, fy, fw, fh (int16)
     
-    ofstream xml(outputDir + name + ".xml");
-    xml << "<atlas>" << endl;
+    //Save the atlas image
+    for (size_t i = 0; i < packers.size(); ++i)
+    {
+        cout << "building atlas: " << name << to_string(i) << endl;
+        packers[i]->SavePng(outputDir + name + to_string(i) + ".png");
+    }
     
-    //Save the atlases
-    for (size_t i = 0, j = packers.size(); i < j; ++i)
-        packers[i]->Save(outputDir, name + to_string(i), xml);
+    //Save the atlas binary
+    if (binary || binaryXml)
+    {
+        ofstream bin(outputDir + name + ".bin", ios::binary);
+        WriteShort(bin, (int16_t)packers.size());
+        for (size_t i = 0; i < packers.size(); ++i)
+            packers[i]->SaveBin(name + to_string(i), bin);
+        bin.close();
+        
+        //Test binary output
+        /*ifstream in(outputDir + name + ".bin");
+        int16_t num_textures = ReadShort(in);
+        cout << "num_textures: " << num_textures << endl;
+        for (int16_t i = 0; i < num_textures; ++i)
+        {
+            string tex_name = ReadString(in);
+            cout << "\ttex_name: " << tex_name << endl;
+            int16_t num_images = ReadShort(in);
+            cout << "\tnum_images: " << num_images << endl;
+            for (int16_t j = 0; j < num_images; ++j)
+            {
+                cout << "\t\t" << ReadString(in)
+                << " x: " << ReadShort(in)
+                << " y: " << ReadShort(in)
+                << " w: " << ReadShort(in)
+                << " h: " << ReadShort(in)
+                << " fx: " << ReadShort(in)
+                << " fy: " << ReadShort(in)
+                << " fw: " << ReadShort(in)
+                << " fh: " << ReadShort(in) << endl;
+            }
+        }*/
+    }
     
-    xml << "</atlas>";
+    //Save the atlas xml
+    if (!binary || binaryXml)
+    {
+        ofstream xml(outputDir + name + ".xml");
+        xml << "<atlas>" << endl;
+        for (size_t i = 0; i < packers.size(); ++i)
+            packers[i]->SaveXml(name + to_string(i), xml);
+        xml << "</atlas>";
+    }
     
     //Save the new hash
-    //saveHash(hash, hashFile);
+    saveHash(hash, hashFile);
     
     return EXIT_SUCCESS;
 }

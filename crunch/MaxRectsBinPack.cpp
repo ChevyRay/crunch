@@ -242,7 +242,8 @@ Rect MaxRectsBinPack::FindPositionForNewNodeBestShortSideFit(int width, int heig
 			}
 		}
 
-		if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
+        //ROTATION DISABLED
+		/*if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
 		{
 			int flippedLeftoverHoriz = abs(freeRectangles[i].width - height);
 			int flippedLeftoverVert = abs(freeRectangles[i].height - width);
@@ -258,7 +259,7 @@ Rect MaxRectsBinPack::FindPositionForNewNodeBestShortSideFit(int width, int heig
 				bestShortSideFit = flippedShortSideFit;
 				bestLongSideFit = flippedLongSideFit;
 			}
-		}
+		}*/
 	}
 	return bestNode;
 }

@@ -22,7 +22,9 @@ struct Packer
     
     Packer(int width, int height);
     void Pack(vector<Bitmap*>& bitmaps);
-    void Save(const string& dir, const string& name, ofstream& xml);
+    void SavePng(const string& file);
+    void SaveXml(const string& name, ofstream& xml);
+    void SaveBin(const string& name, ofstream& bin);
 };
 
 #endif

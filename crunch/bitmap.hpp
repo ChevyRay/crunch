@@ -17,8 +17,7 @@ struct Bitmap
     int frameW;
     int frameH;
     uint32_t* data;
-    vector<unsigned char> dataVector;
-    Bitmap(const string& file, const string& name);
+    Bitmap(const string& file, const string& name, bool premultiply, bool trim);
     Bitmap(int width, int height);
     ~Bitmap();
     void SaveAs(const string& file);
