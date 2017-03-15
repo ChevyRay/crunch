@@ -33,3 +33,6 @@
 *.log
 crunch/Debug/*
 crunch/Release/*
+*.opendb
+*.db
+*.db
