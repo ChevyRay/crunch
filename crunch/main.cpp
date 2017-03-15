@@ -116,19 +116,26 @@ int main(int argc, const char* argv[])
     }
     
     //Hash the input directory
-    size_t hash = 0;
-    hashFiles(hash, inputDir);
+    size_t newHash = 0;
+    hashFiles(newHash, inputDir);
     
     //Load the old hash
     size_t oldHash;
     if (loadHash(oldHash, outputDir + name + ".hash"))
     {
-        if (hash == oldHash)
+        if (newHash == oldHash)
         {
             cout << "atlas is unchanged: " << name << endl;
             return EXIT_SUCCESS;
         }
     }
+    
+    //Remove old files
+    RemoveFile(outputDir + name + ".hash");
+    RemoveFile(outputDir + name + ".bin");
+    RemoveFile(outputDir + name + ".xml");
+    for (size_t i = 0; i < 16; ++i)
+        RemoveFile(outputDir + name + to_string(i) + ".png");
     
     //Load the bitmaps and sort them by area
     if (verbose)
@@ -149,13 +156,6 @@ int main(int argc, const char* argv[])
         if (verbose)
             cout << "\tfinished packing: " << name << to_string(packers.size() - 1) << " (" << packer->width << " x " << packer->height << ')' << endl;
     }
-    
-    //Remove old files
-    RemoveFile(outputDir + name + ".hash");
-    RemoveFile(outputDir + name + ".bin");
-    RemoveFile(outputDir + name + ".xml");
-    for (size_t i = 0; i < 16; ++i)
-        RemoveFile(outputDir + name + to_string(i) + ".png");
     
     //FORMAT:
     //num_textures (int16)
@@ -225,7 +225,7 @@ int main(int argc, const char* argv[])
     }
     
     //Save the new hash
-    saveHash(hash, outputDir + name + ".hash");
+    saveHash(newHash, outputDir + name + ".hash");
     
     return EXIT_SUCCESS;
 }
