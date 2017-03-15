@@ -122,6 +122,11 @@ static void loadBitmaps(const string& root, bool premultiply, bool trim)
     tinydir_close(&dir);
 }
 
+static void RemoveFile(string file)
+{
+    remove(file.data());
+}
+
 int main(int argc, const char* argv[])
 {
     //Print out passed arguments
@@ -192,6 +197,12 @@ int main(int argc, const char* argv[])
         packer->Pack(bitmaps);
         packers.push_back(packer);
     }
+    
+    //Remove old files
+    RemoveFile(outputDir + name + ".bin");
+    RemoveFile(outputDir + name + ".xml");
+    for (size_t i = 0; i < 16; ++i)
+        RemoveFile(outputDir + name + to_string(i) + ".png");
     
     //FORMAT:
     //num_textures (int16)
