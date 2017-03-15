@@ -2,13 +2,14 @@
 #include <fstream>
 #include <streambuf>
 #include <string>
-#include <sstream>
 #include <vector>
 #include <algorithm>
 #include "tinydir.h"
 #include "bitmap.hpp"
 #include "packer.hpp"
 #include "binary.hpp"
+#include "hash.hpp"
+#include "str.hpp"
 
 #define PACK_SIZE 4096
 
@@ -21,94 +22,6 @@ static bool trim;
 static bool verbose;
 static vector<Bitmap*> bitmaps;
 static vector<Packer*> packers;
-
-template <class T>
-inline void hashCombine(std::size_t& hash, const T& v)
-{
-    std::hash<T> hasher;
-    hash ^= hasher(v) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-}
-
-#if defined _MSC_VER || defined __MINGW32__
-#include <locale>
-#include <codecvt>
-wstring StrToFile(const string& str)
-{
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	return converter.from_bytes(str);
-}
-string FileToStr(const wstring& str)
-{
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	return converter.to_bytes(str);
-}
-#else
-const string& StrToFile(const string& str)
-{
-	return str;
-}
-const string& FileToStr(const string& str)
-{
-	return str;
-}
-#endif
-static void hashFiles(size_t& hash, const string& root)
-{
-    static string dot1 = ".";
-    static string dot2 = "..";
-    
-    tinydir_dir dir;
-    tinydir_open(&dir, StrToFile(root.data()).data());
-    
-    while (dir.has_next)
-    {
-        tinydir_file file;
-        tinydir_readfile(&dir, &file);
-        
-        if (file.is_dir)
-        {
-            if (dot1 != FileToStr(file.name) && dot2 != FileToStr(file.name))
-                hashFiles(hash, FileToStr(file.path));
-        }
-        else if (FileToStr(file.extension) == "png")
-        {
-            ifstream stream(file.path, ios::binary | ios::ate);
-            streamsize size = stream.tellg();
-            stream.seekg(0, ios::beg);
-            vector<char> buffer(size + 1);
-            if (!stream.read(buffer.data(), size))
-            {
-                cerr << "failed to read file: " << file.path << endl;
-                exit(EXIT_FAILURE);
-            }
-            string text(buffer.begin(), buffer.end());
-            hashCombine(hash, text);
-        }
-        
-        tinydir_next(&dir);
-    }
-    
-    tinydir_close(&dir);
-}
-
-static bool loadHash(size_t& hash, const string& file)
-{
-    ifstream stream(file);
-    if (stream)
-    {
-        stringstream ss;
-        ss << stream.rdbuf();
-        ss >> hash;
-        return true;
-    }
-    return false;
-}
-
-static void saveHash(size_t hash, const string& file)
-{
-    ofstream stream(file);
-    stream << hash;
-}
 
 static string getFileName(const string& path)
 {
