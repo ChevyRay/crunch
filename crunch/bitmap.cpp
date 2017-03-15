@@ -2,6 +2,7 @@
 #include <iostream>
 #define LODEPNG_NO_COMPILE_CPP
 #include "lodepng.h"
+#include <algorithm>
 
 using namespace std;
 
