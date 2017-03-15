@@ -20,6 +20,7 @@ static bool binaryXml;
 static bool premultiply;
 static bool trim;
 static bool verbose;
+static bool force;
 static vector<Bitmap*> bitmaps;
 static vector<Packer*> packers;
 
@@ -113,6 +114,8 @@ int main(int argc, const char* argv[])
             trim = true;
         if (arg == "-v" || arg == "--verbose")
             verbose = true;
+        if (arg == "-f" || arg == "--force")
+            force = true;
     }
     
     //Hash the input directory
@@ -123,7 +126,7 @@ int main(int argc, const char* argv[])
     size_t oldHash;
     if (loadHash(oldHash, outputDir + name + ".hash"))
     {
-        if (newHash == oldHash)
+        if (!force && newHash == oldHash)
         {
             cout << "atlas is unchanged: " << name << endl;
             return EXIT_SUCCESS;
