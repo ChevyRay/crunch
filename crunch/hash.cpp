@@ -24,6 +24,7 @@ void hashFile(size_t& hash, const string& file)
         cerr << "failed to read file: " << file << endl;
         exit(EXIT_FAILURE);
     }
+    buffer[size] = '\0';
     string text(buffer.begin(), buffer.end());
     hashCombine(hash, text);
 }
@@ -53,6 +54,12 @@ void hashFiles(size_t& hash, const string& root)
     }
     
     tinydir_close(&dir);
+}
+
+void hashData(size_t& hash, const char* data, size_t size)
+{
+    string str(data, size);
+    hashCombine(hash, str);
 }
 
 bool loadHash(size_t& hash, const string& file)

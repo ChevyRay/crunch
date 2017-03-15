@@ -3,6 +3,7 @@
 #define LODEPNG_NO_COMPILE_CPP
 #include "lodepng.h"
 #include <algorithm>
+#include "hash.hpp"
 
 using namespace std;
 
@@ -108,6 +109,10 @@ Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool tr
         //Free the untrimmed pixels
         free(pixels);
     }
+    
+    //Generate a hash for the bitmap
+    hash = 0;
+    hashData(hash, reinterpret_cast<char*>(data), sizeof(uint32_t) * width * height);
 }
 
 Bitmap::Bitmap(int width, int height)

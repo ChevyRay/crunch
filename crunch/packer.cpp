@@ -27,17 +27,28 @@ void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose)
         if (verbose)
             cout << '\t' << bitmaps.size() << ": " << bitmap->name << endl;
         
-        Rect rect = packer.Insert(bitmap->width + 1, bitmap->height + 1, MaxRectsBinPack::RectBestShortSideFit);
-
-        if (rect.width == 0 || rect.height == 0)
-            return;
+        //Check to see if this is a duplicate of an already packed bitmap
+        auto di = dupLookup.find(bitmap->hash);
+        if (di != dupLookup.end())
+        {
+            Point p = points[di->second];
+            points.push_back({ p.x, p.y, di->second });
+        }
+        else
+        {
+            Rect rect = packer.Insert(bitmap->width + 1, bitmap->height + 1, MaxRectsBinPack::RectBestShortSideFit);
+            
+            if (rect.width == 0 || rect.height == 0)
+                return;
+            
+            points.push_back({ rect.x, rect.y, -1 });
+            
+            ww = max(rect.x + rect.width, ww);
+            hh = max(rect.y + rect.height, hh);
+        }
         
         this->bitmaps.push_back(bitmap);
         bitmaps.pop_back();
-        points.push_back({ rect.x, rect.y });
-        
-        ww = max(rect.x + rect.width, ww);
-        hh = max(rect.y + rect.height, hh);
     }
     
     while (width / 2 >= ww)
@@ -50,7 +61,8 @@ void Packer::SavePng(const string& file)
 {
     Bitmap bitmap(width, height);
     for (size_t i = 0, j = bitmaps.size(); i < j; ++i)
-        bitmap.CopyPixels(bitmaps[i], points[i].x, points[i].y);
+        if (points[i].dupID < 0)
+            bitmap.CopyPixels(bitmaps[i], points[i].x, points[i].y);
     bitmap.SaveAs(file);
 }
 

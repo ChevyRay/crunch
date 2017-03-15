@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <fstream>
+#include <unordered_map>
 #include "bitmap.hpp"
 
 using namespace std;
@@ -11,14 +12,17 @@ struct Point
 {
     int x;
     int y;
+    int dupID;
 };
 
 struct Packer
 {
     int width;
     int height;
+    
     vector<Bitmap*> bitmaps;
     vector<Point> points;
+    unordered_map<size_t, int> dupLookup;
     
     Packer(int width, int height);
     void Pack(vector<Bitmap*>& bitmaps, bool verbose);
