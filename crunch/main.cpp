@@ -117,7 +117,7 @@ static string getFileName(const string& path)
         return path.substr(s, d - s);
 }
 
-static void loadBitmaps(const string& root, bool premultiply, bool trim)
+static void loadBitmaps(const string& root, bool premultiply, bool trim, bool verbose)
 {
     static string dot1 = ".";
     static string dot2 = "..";
@@ -133,11 +133,13 @@ static void loadBitmaps(const string& root, bool premultiply, bool trim)
         if (file.is_dir)
         {
             if (dot1 != FileToStr(file.name) && dot2 != FileToStr(file.name))
-                loadBitmaps(FileToStr(file.path), premultiply, trim);
+                loadBitmaps(FileToStr(file.path), premultiply, trim, verbose);
         }
         else if (FileToStr(file.extension) == "png")
         {
-			cout << "loading: " << FileToStr(file.path) << endl;
+            if (verbose)
+                cout << '\t' << FileToStr(file.path) << endl;
+            
             bitmaps.push_back(new Bitmap(FileToStr(file.path), getFileName(FileToStr(file.path)), premultiply, trim));
         }
         
@@ -179,6 +181,7 @@ int main(int argc, const char* argv[])
     bool binaryXml = false;
     bool premultiply = false;
     bool trim = false;
+    bool verbose = false;
     for (int i = 3; i < argc; ++i)
     {
         string arg = argv[i];
@@ -190,6 +193,8 @@ int main(int argc, const char* argv[])
             premultiply = true;
         if (arg == "-t" || arg == "--trim")
             trim = true;
+        if (arg == "-v" || arg == "--verbose")
+            verbose = true;
     }
     
     //Hash the input directory
@@ -202,14 +207,15 @@ int main(int argc, const char* argv[])
     {
         if (hash == oldHash)
         {
-            //cout << "images have not changed in: " << inputDir << endl;
             cout << "atlas is unchanged: " << name << endl;
             return EXIT_SUCCESS;
         }
     }
     
     //Load the bitmaps and sort them by area
-    loadBitmaps(inputDir, premultiply, trim);
+    if (verbose)
+        cout << "loading images..." << endl;
+    loadBitmaps(inputDir, premultiply, trim, verbose);
     sort(bitmaps.begin(), bitmaps.end(), [](const Bitmap* a, const Bitmap* b) {
         return (a->width * a->height) < (b->width * b->height);
     });
@@ -217,11 +223,13 @@ int main(int argc, const char* argv[])
     //Pack the bitmaps
     while (!bitmaps.empty())
     {
-		cout << "packing atlas..." << endl;
+        if (verbose)
+            cout << "packing " << bitmaps.size() << " images..." << endl;
         auto packer = new Packer(PACK_SIZE, PACK_SIZE);
-        packer->Pack(bitmaps);
+        packer->Pack(bitmaps, verbose);
         packers.push_back(packer);
-		cout << "packed size: " << packer->width << 'x' << packer->height << endl;
+        if (verbose)
+            cout << "\tfinished packing: " << name << to_string(packers.size() - 1) << " (" << packer->width << " x " << packer->height << ')' << endl;
     }
     
     //Remove old files
@@ -243,13 +251,17 @@ int main(int argc, const char* argv[])
     //Save the atlas image
     for (size_t i = 0; i < packers.size(); ++i)
     {
-        cout << "building atlas: " << name << to_string(i) << endl;
+        if (verbose)
+            cout << "writing png: " << outputDir << name << to_string(i) << ".png" << endl;
         packers[i]->SavePng(outputDir + name + to_string(i) + ".png");
     }
     
     //Save the atlas binary
     if (binary || binaryXml)
     {
+        if (verbose)
+            cout << "writing bin: " << outputDir << name << ".bin" << endl;
+        
         ofstream bin(outputDir + name + ".bin", ios::binary);
         WriteShort(bin, (int16_t)packers.size());
         for (size_t i = 0; i < packers.size(); ++i)
@@ -284,6 +296,9 @@ int main(int argc, const char* argv[])
     //Save the atlas xml
     if (!binary || binaryXml)
     {
+        if (verbose)
+            cout << "writing xml: " << outputDir << name << ".xml" << endl;
+        
         ofstream xml(outputDir + name + ".xml");
         xml << "<atlas>" << endl;
         for (size_t i = 0; i < packers.size(); ++i)

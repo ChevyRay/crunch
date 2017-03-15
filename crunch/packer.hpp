@@ -21,7 +21,7 @@ struct Packer
     vector<Point> points;
     
     Packer(int width, int height);
-    void Pack(vector<Bitmap*>& bitmaps);
+    void Pack(vector<Bitmap*>& bitmaps, bool verbose);
     void SavePng(const string& file);
     void SaveXml(const string& name, ofstream& xml);
     void SaveBin(const string& name, ofstream& bin);
