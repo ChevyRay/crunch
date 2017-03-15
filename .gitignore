@@ -31,10 +31,8 @@
 *.pdb
 *.tlog
 *.log
-crunch/Debug/*
-crunch/Release/*
+Debug/*
+Release/*
 *.opendb
 *.db
 *.suo
-crunch/crunch.VC.db
-crunch/.vs/crunch/v14/.suo
