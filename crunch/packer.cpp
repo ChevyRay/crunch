@@ -41,6 +41,7 @@ void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose)
             if (rect.width == 0 || rect.height == 0)
                 return;
             
+            dupLookup[bitmap->hash] = static_cast<int>(points.size());
             points.push_back({ rect.x, rect.y, -1 });
             
             ww = max(rect.x + rect.width, ww);

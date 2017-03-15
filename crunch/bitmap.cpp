@@ -38,6 +38,8 @@ Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool tr
             g = static_cast<uint32_t>(((c >> 16) & 0xff) * m);
             b = static_cast<uint32_t>(((c >> 8) & 0xff) * m);
 			pixels[i] = (r << 24) | (g << 16) | (b << 8) | a;*/
+            
+            //abgr
 			c = pixels[i];
 			a = c >> 24;
 			m = static_cast<float>(a) / 255.0f;
