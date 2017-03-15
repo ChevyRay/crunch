@@ -28,7 +28,7 @@ void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose)
             cout << '\t' << bitmaps.size() << ": " << bitmap->name << endl;
         
         //Check to see if this is a duplicate of an already packed bitmap
-        auto di = dupLookup.find(bitmap->hash);
+        auto di = dupLookup.find(bitmap->hashValue);
         if (di != dupLookup.end())
         {
             Point p = points[di->second];
@@ -41,7 +41,7 @@ void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose)
             if (rect.width == 0 || rect.height == 0)
                 return;
             
-            dupLookup[bitmap->hash] = static_cast<int>(points.size());
+            dupLookup[bitmap->hashValue] = static_cast<int>(points.size());
             points.push_back({ rect.x, rect.y, -1 });
             
             ww = max(rect.x + rect.width, ww);
