@@ -21,6 +21,7 @@ static bool premultiply;
 static bool trim;
 static bool verbose;
 static bool force;
+static int reduce;
 static vector<Bitmap*> bitmaps;
 static vector<Packer*> packers;
 
@@ -101,6 +102,7 @@ int main(int argc, const char* argv[])
     premultiply = false;
     trim = false;
     verbose = false;
+    reduce = 0;
     for (int i = 3; i < argc; ++i)
     {
         string arg = argv[i];
@@ -116,6 +118,10 @@ int main(int argc, const char* argv[])
             verbose = true;
         if (arg == "-f" || arg == "--force")
             force = true;
+        if (arg == "-r" || arg == "--reduce")
+            reduce = 1;
+        if (arg == "-rs" || arg == "--reducestrict")
+            reduce = 2;
     }
     
     //Hash the input directory
@@ -154,7 +160,7 @@ int main(int argc, const char* argv[])
         if (verbose)
             cout << "packing " << bitmaps.size() << " images..." << endl;
         auto packer = new Packer(PACK_SIZE, PACK_SIZE);
-        packer->Pack(bitmaps, verbose);
+        packer->Pack(bitmaps, verbose, reduce);
         packers.push_back(packer);
         if (verbose)
             cout << "\tfinished packing: " << name << to_string(packers.size() - 1) << " (" << packer->width << " x " << packer->height << ')' << endl;

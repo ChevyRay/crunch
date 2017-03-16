@@ -14,7 +14,7 @@ Packer::Packer(int width, int height)
     
 }
 
-void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose)
+void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose, int reduce)
 {
     MaxRectsBinPack packer(width, height);
     
@@ -29,7 +29,7 @@ void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose)
         
         //Check to see if this is a duplicate of an already packed bitmap
         auto di = dupLookup.find(bitmap->hashValue);
-        if (di != dupLookup.end())
+        if (reduce > 0 && di != dupLookup.end() && (reduce < 2 || bitmap->Equals(bitmaps[di->second])))
         {
             Point p = points[di->second];
             points.push_back({ p.x, p.y, di->second });
@@ -41,7 +41,8 @@ void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose)
             if (rect.width == 0 || rect.height == 0)
                 return;
             
-            dupLookup[bitmap->hashValue] = static_cast<int>(points.size());
+            if (reduce > 0)
+                dupLookup[bitmap->hashValue] = static_cast<int>(points.size());
             points.push_back({ rect.x, rect.y, -1 });
             
             ww = max(rect.x + rect.width, ww);

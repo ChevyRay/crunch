@@ -156,3 +156,10 @@ void Bitmap::CopyPixels(const Bitmap* src, int tx, int ty)
         for (int x = 0; x < src->width; ++x)
             data[(ty + y) * width + (tx + x)] = src->data[y * src->width + x];
 }
+
+bool Bitmap::Equals(const Bitmap* other) const
+{
+    if (width == other->width && height == other->height)
+        return memcmp(data, other->data, sizeof(uint32_t) * width * height) == 0;
+    return false;
+}

@@ -23,6 +23,7 @@ struct Bitmap
     ~Bitmap();
     void SaveAs(const string& file);
     void CopyPixels(const Bitmap* src, int tx, int ty);
+    bool Equals(const Bitmap* other) const;
 };
 
 #endif
