@@ -40,7 +40,7 @@ Packer::Packer(int width, int height)
     
 }
 
-void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose, int unique, bool rotate)
+void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose, bool unique, bool rotate)
 {
     MaxRectsBinPack packer(width, height);
     
@@ -54,19 +54,29 @@ void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose, int unique, bool rotat
             cout << '\t' << bitmaps.size() << ": " << bitmap->name << endl;
         
         //Check to see if this is a duplicate of an already packed bitmap
-        auto di = dupLookup.find(bitmap->hashValue);
-        if (unique > 0 && di != dupLookup.end() && (unique < 2 || bitmap->Equals(bitmaps[di->second])))
+        if (unique)
         {
-            Point p = points[di->second];
-            p.dupID = di->second;
-            points.push_back(p);
+            auto di = dupLookup.find(bitmap->hashValue);
+            if (di != dupLookup.end() && bitmap->Equals(this->bitmaps[di->second]))
+            {
+                Point p = points[di->second];
+                p.dupID = di->second;
+                points.push_back(p);
+                this->bitmaps.push_back(bitmap);
+                bitmaps.pop_back();
+                continue;
+            }
         }
-        else
+        
+        //If it's not a duplicate, pack it into the atlas
         {
             Rect rect = packer.Insert(bitmap->width + 1, bitmap->height + 1, rotate, MaxRectsBinPack::RectBestShortSideFit);
             
             if (rect.width == 0 || rect.height == 0)
-                return;
+                break;
+            
+            if (unique)
+                dupLookup[bitmap->hashValue] = static_cast<int>(points.size());
             
             //Check if we rotated it
             Point p;
@@ -75,17 +85,13 @@ void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose, int unique, bool rotat
             p.dupID = -1;
             p.rot = rotate && bitmap->width != (rect.width - 1);
             
-            if (unique > 0)
-                dupLookup[bitmap->hashValue] = static_cast<int>(points.size());
-            
             points.push_back(p);
+            this->bitmaps.push_back(bitmap);
+            bitmaps.pop_back();
             
             ww = max(rect.x + rect.width, ww);
             hh = max(rect.y + rect.height, hh);
         }
-        
-        this->bitmaps.push_back(bitmap);
-        bitmaps.pop_back();
     }
     
     while (width / 2 >= ww)

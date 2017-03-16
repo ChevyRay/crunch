@@ -39,7 +39,7 @@
     -v  --verbose           print to the debug console as the packer works
     -f  --force             ignore the hash, forcing the packer to repack
     -u  --unique            removes duplicate bitmaps from the atlas by hash comparison
-    -us --uniquestrict      removes duplicate bitmaps fro the atlas by strict comparison
+    -r  --rotate            enabled rotating bitmaps 90 degrees clockwise when packing
  
  binary format:
     [int16] num_textures (below block is repeated this many times)
@@ -80,7 +80,7 @@ static bool optPremultiply;
 static bool optTrim;
 static bool optVerbose;
 static bool optForce;
-static int optUnique;
+static bool optUnique;
 static bool optRotate;
 static vector<Bitmap*> bitmaps;
 static vector<Packer*> packers;
@@ -161,7 +161,7 @@ int main(int argc, const char* argv[])
     optTrim = false;
     optVerbose = false;
     optForce = false;
-    optUnique = 0;
+    optUnique = false;
     for (int i = 3; i < argc; ++i)
     {
         string arg = argv[i];
@@ -178,9 +178,7 @@ int main(int argc, const char* argv[])
         if (arg == "-f" || arg == "--force")
             optForce = true;
         if (arg == "-u" || arg == "--unique")
-            optUnique = 1;
-        if (arg == "-us" || arg == "--uniquestrict")
-            optUnique = 2;
+            optUnique = true;
         if (arg == "-r" || arg == "--rotate")
             optRotate = true;
     }

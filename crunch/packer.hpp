@@ -52,7 +52,7 @@ struct Packer
     unordered_map<size_t, int> dupLookup;
     
     Packer(int width, int height);
-    void Pack(vector<Bitmap*>& bitmaps, bool verbose, int reduce, bool rotate);
+    void Pack(vector<Bitmap*>& bitmaps, bool verbose, bool unique, bool rotate);
     void SavePng(const string& file);
     void SaveXml(const string& name, ofstream& xml, bool trim, bool rotate);
     void SaveBin(const string& name, ofstream& bin, bool trim, bool rotate);
