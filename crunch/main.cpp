@@ -29,7 +29,7 @@
     crunch [INPUT_DIR] [OUTPUT_DIR] [OPTIONS...]
  
  example:
-    crunch assets/characters bin/atlases -p -t -v -rs
+    crunch assets/characters bin/atlases -p -t -v -u -r
  
  options:
     -b  --binary            saves the atlas data as .bin file (instead of xml)
