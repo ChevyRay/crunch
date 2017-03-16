@@ -40,6 +40,7 @@
     -f  --force             ignore the hash, forcing the packer to repack
     -u  --unique            removes duplicate bitmaps from the atlas by hash comparison
     -r  --rotate            enabled rotating bitmaps 90 degrees clockwise when packing
+    -s# --size#             max atlas size (# can be 4096, 2048, 1024, 512, or 256)
  
  binary format:
     [int16] num_textures (below block is repeated this many times)
@@ -70,10 +71,9 @@
 #include "hash.hpp"
 #include "str.hpp"
 
-#define PACK_SIZE 4096
-
 using namespace std;
 
+static int packSize;
 static bool optBinary;
 static bool optBinaryXml;
 static bool optPremultiply;
@@ -134,6 +134,23 @@ static void RemoveFile(string file)
     remove(file.data());
 }
 
+static int GetPackSize(const string& str)
+{
+    if (str == "4096")
+        return 4096;
+    if (str == "2048")
+        return 2048;
+    if (str == "1024")
+        return 1024;
+    if (str == "512")
+        return 512;
+    if (str == "256")
+        return 256;
+    cerr << "invalid size: " << str << endl;
+    exit(EXIT_FAILURE);
+    return 0;
+}
+
 int main(int argc, const char* argv[])
 {
     //Print out passed arguments
@@ -155,6 +172,7 @@ int main(int argc, const char* argv[])
     outputDir += '/';
     
     //Get the options
+    packSize = 4096;
     optBinary = false;
     optBinaryXml = false;
     optPremultiply = false;
@@ -167,20 +185,24 @@ int main(int argc, const char* argv[])
         string arg = argv[i];
         if (arg == "-b" || arg == "--binary")
             optBinary = true;
-        if (arg == "-bx" || arg == "--binaryxml")
+        else if (arg == "-bx" || arg == "--binaryxml")
             optBinaryXml = true;
-        if (arg == "-p" || arg == "--premultiply")
+        else if (arg == "-p" || arg == "--premultiply")
             optPremultiply = true;
-        if (arg == "-t" || arg == "--trim")
+        else if (arg == "-t" || arg == "--trim")
             optTrim = true;
-        if (arg == "-v" || arg == "--verbose")
+        else if (arg == "-v" || arg == "--verbose")
             optVerbose = true;
-        if (arg == "-f" || arg == "--force")
+        else if (arg == "-f" || arg == "--force")
             optForce = true;
-        if (arg == "-u" || arg == "--unique")
+        else if (arg == "-u" || arg == "--unique")
             optUnique = true;
-        if (arg == "-r" || arg == "--rotate")
+        else if (arg == "-r" || arg == "--rotate")
             optRotate = true;
+        else if (arg.find("--size") == 0)
+            packSize = GetPackSize(arg.substr(6));
+        else if (arg.find("-s") == 0)
+            packSize = GetPackSize(arg.substr(2));
     }
     
     //Hash the input directory
@@ -218,11 +240,17 @@ int main(int argc, const char* argv[])
     {
         if (optVerbose)
             cout << "packing " << bitmaps.size() << " images..." << endl;
-        auto packer = new Packer(PACK_SIZE, PACK_SIZE);
+        auto packer = new Packer(packSize, packSize);
         packer->Pack(bitmaps, optVerbose, optUnique, optRotate);
         packers.push_back(packer);
         if (optVerbose)
             cout << "\tfinished packing: " << name << to_string(packers.size() - 1) << " (" << packer->width << " x " << packer->height << ')' << endl;
+    
+        if (packer->bitmaps.empty())
+        {
+            cerr << "packing failed, could not fit bitmap: " << (bitmaps.back())->name << endl;
+            return EXIT_FAILURE;
+        }
     }
     
     //Save the atlas image
