@@ -6,6 +6,13 @@ This is a command line tool that will pack a bunch of images into a single, larg
 
 ### Features
 
+- XML or binary format
+- Trim excess transparency
+- Rotate images to fit
+- Premultiply pixel values
+- Recursively scans folders
+- Remove duplicate images
+- Caching to prevent redundant builds
 
 ### What does it do?
 
