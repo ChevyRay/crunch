@@ -8,9 +8,10 @@ It is designed using libraries with permissible licenses, so you are able to use
 
 ### Features
 
-- XML or binary format
+- Export XML, JSON, or binary data
 - Trim excess transparency
 - Rotate images to fit
+- Control atlas size and padding
 - Premultiply pixel values
 - Recursively scans folders
 - Remove duplicate images
