@@ -12,6 +12,10 @@ void hashCombine(std::size_t& hash, const T& v)
     std::hash<T> hasher;
     hash ^= hasher(v) + 0x9e3779b9 + (hash<<6) + (hash>>2);
 }
+void hashCombine(std::size_t& hash, size_t v)
+{
+    hash ^= v + 0x9e3779b9 + (hash<<6) + (hash>>2);
+}
 
 void hashFile(size_t& hash, const string& file)
 {

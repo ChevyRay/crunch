@@ -6,6 +6,7 @@ using namespace std;
 
 template <class T>
 void hashCombine(std::size_t& hash, const T& v);
+void hashCombine(std::size_t& hash, size_t v);
 void hashFile(size_t& hash, const string& file);
 void hashFiles(size_t& hash, const string& root);
 void hashData(size_t& hash, const char* data, size_t size);
