@@ -51,16 +51,16 @@ For example...
 
 ### Options
 
-| option | alias | description |
-| ------------- | ------------- |
-| -b  | --binary  |  saves the atlas data as .bin file
-| -bx  | --binaryxml  | saves the atlas data as both .bin and .xml file
-| -p  | --premultiply  |  premultiplies the pixels of the bitmaps by their alpha channel
-| -t  | --trim  |  trims excess transparency off the bitmaps
-| -v  | --verbose  |  print to the debug console as the packer works
-| -f  | --force  |  ignore caching, forcing the packer to repack
-| -u  | --unique  |  removes duplicate bitmaps from the atlas by hash comparison
-| -r  | --rotate  |  enabled rotating bitmaps 90 degrees clockwise when packing
+| option        | alias         | description |
+| ------------- | ------------- | ------------|
+| -b            | --binary      |  saves the atlas data as .bin file
+| -bx           | --binaryxml   | saves the atlas data as both .bin and .xml file
+| -p            | --premultiply |  premultiplies the pixels of the bitmaps by their alpha channel
+| -t            | --trim        |  trims excess transparency off the bitmaps
+| -v            | --verbose     |  print to the debug console as the packer works
+| -f            | --force       |  ignore caching, forcing the packer to repack
+| -u            | --unique      |  removes duplicate bitmaps from the atlas by hash comparison
+| -r            | --rotate      |  enabled rotating bitmaps 90 degrees clockwise when packing
 
 ### Binary Format
 
