@@ -104,7 +104,7 @@ static void loadBitmaps(const string& root, const string& prefix)
     tinydir_close(&dir);
 }
 
-static void RemoveFile(string file)
+static void RemoveFile(const string& file)
 {
     remove(file.data());
 }
