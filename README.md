@@ -1,7 +1,5 @@
 # crunch
 
-*Copyright (c) 2017 Chevy Ray Johnston*
-
 This is a command line tool that will pack a bunch of images into a single, larger image. It was designed for [Celeste](http://www.celestegame.com/), but could be very helpful for other games.
 
 It is designed using libraries with permissible licenses, so you are able to use it freely in your commercial and non-commercial projects. Please see each source file for its respective copyright and license.
