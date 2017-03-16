@@ -1,8 +1,6 @@
 # crunch
 
-Copyright (c) 2017 Chevy Ray Johnston
-
----
+*Copyright (c) 2017 Chevy Ray Johnston*
 
 This is a command line tool that will pack a bunch of images into a single, larger image. It only works with 32-bit RGBA PNG files.
 
