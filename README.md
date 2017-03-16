@@ -53,8 +53,9 @@ For example...
 
 | option        | alias         | description |
 | ------------- | ------------- | ------------|
-| -b            | --binary      | saves the atlas data as .bin file
-| -bx           | --binaryxml   | saves the atlas data as both .bin and .xml file
+| -x            | --xml         | saves the atlas data as a .xml file
+| -b            | --binary      | saves the atlas data as a .bin file
+| -j            | --json        | saves the atlas data as a .json file
 | -p            | --premultiply | premultiplies the pixels of the bitmaps by their alpha channel
 | -t            | --trim        | trims excess transparency off the bitmaps
 | -v            | --verbose     | print to the debug console as the packer works
