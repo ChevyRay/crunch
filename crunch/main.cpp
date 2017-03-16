@@ -85,7 +85,7 @@ static bool optRotate;
 static vector<Bitmap*> bitmaps;
 static vector<Packer*> packers;
 
-static string getFileName(const string& path)
+static string GetFileName(const string& path)
 {
     size_t s = path.rfind('/') + 1;
     if (s == string::npos)
@@ -97,13 +97,13 @@ static string getFileName(const string& path)
         return path.substr(s, d - s);
 }
 
-static void loadBitmaps(const string& root, const string& prefix)
+static void LoadBitmaps(const string& root, const string& prefix)
 {
     static string dot1 = ".";
     static string dot2 = "..";
     
     tinydir_dir dir;
-    tinydir_open(&dir, StrToFile(root.data()).data());
+    tinydir_open(&dir, StrToPath(root).data());
     
     while (dir.has_next)
     {
@@ -112,15 +112,15 @@ static void loadBitmaps(const string& root, const string& prefix)
         
         if (file.is_dir)
         {
-            if (dot1 != FileToStr(file.name) && dot2 != FileToStr(file.name))
-                loadBitmaps(FileToStr(file.path), prefix + FileToStr(file.name) + "/");
+            if (dot1 != PathToStr(file.name) && dot2 != PathToStr(file.name))
+                LoadBitmaps(PathToStr(file.path), prefix + PathToStr(file.name) + "/");
         }
-        else if (FileToStr(file.extension) == "png")
+        else if (PathToStr(file.extension) == "png")
         {
             if (optVerbose)
-                cout << '\t' << FileToStr(file.path) << endl;
+                cout << '\t' << PathToStr(file.path) << endl;
             
-            bitmaps.push_back(new Bitmap(FileToStr(file.path), prefix + getFileName(FileToStr(file.path)), optPremultiply, optTrim));
+            bitmaps.push_back(new Bitmap(PathToStr(file.path), prefix + GetFileName(PathToStr(file.path)), optPremultiply, optTrim));
         }
         
         tinydir_next(&dir);
@@ -167,7 +167,7 @@ int main(int argc, const char* argv[])
     //Get the input/output directories
     string inputDir = argv[1];
     string outputDir = argv[2];
-    string name = getFileName(inputDir);
+    string name = GetFileName(inputDir);
     inputDir += '/';
     outputDir += '/';
     
@@ -207,11 +207,11 @@ int main(int argc, const char* argv[])
     
     //Hash the input directory
     size_t newHash = 0;
-    hashFiles(newHash, inputDir);
+    HashFiles(newHash, inputDir);
     
     //Load the old hash
     size_t oldHash;
-    if (loadHash(oldHash, outputDir + name + ".hash"))
+    if (LoadHash(oldHash, outputDir + name + ".hash"))
     {
         if (!optForce && newHash == oldHash)
         {
@@ -230,7 +230,7 @@ int main(int argc, const char* argv[])
     //Load the bitmaps and sort them by area
     if (optVerbose)
         cout << "loading images..." << endl;
-    loadBitmaps(inputDir, "");
+    LoadBitmaps(inputDir, "");
     sort(bitmaps.begin(), bitmaps.end(), [](const Bitmap* a, const Bitmap* b) {
         return (a->width * a->height) < (b->width * b->height);
     });
@@ -288,7 +288,7 @@ int main(int argc, const char* argv[])
     }
     
     //Save the new hash
-    saveHash(newHash, outputDir + name + ".hash");
+    SaveHash(newHash, outputDir + name + ".hash");
     
     return EXIT_SUCCESS;
 }

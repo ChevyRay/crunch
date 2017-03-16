@@ -33,17 +33,17 @@
 #include "str.hpp"
 
 template <class T>
-void hashCombine(std::size_t& hash, const T& v)
+void HashCombine(std::size_t& hash, const T& v)
 {
     std::hash<T> hasher;
     hash ^= hasher(v) + 0x9e3779b9 + (hash<<6) + (hash>>2);
 }
-void hashCombine(std::size_t& hash, size_t v)
+void HashCombine(std::size_t& hash, size_t v)
 {
     hash ^= v + 0x9e3779b9 + (hash<<6) + (hash>>2);
 }
 
-void hashFile(size_t& hash, const string& file)
+void HashFile(size_t& hash, const string& file)
 {
     ifstream stream(file, ios::binary | ios::ate);
     streamsize size = stream.tellg();
@@ -56,16 +56,16 @@ void hashFile(size_t& hash, const string& file)
     }
     buffer[size] = '\0';
     string text(buffer.begin(), buffer.end());
-    hashCombine(hash, text);
+    HashCombine(hash, text);
 }
 
-void hashFiles(size_t& hash, const string& root)
+void HashFiles(size_t& hash, const string& root)
 {
     static string dot1 = ".";
     static string dot2 = "..";
     
     tinydir_dir dir;
-    tinydir_open(&dir, StrToFile(root.data()).data());
+    tinydir_open(&dir, StrToPath(root).data());
     
     while (dir.has_next)
     {
@@ -74,11 +74,11 @@ void hashFiles(size_t& hash, const string& root)
         
         if (file.is_dir)
         {
-            if (dot1 != FileToStr(file.name) && dot2 != FileToStr(file.name))
-                hashFiles(hash, FileToStr(file.path));
+            if (dot1 != PathToStr(file.name) && dot2 != PathToStr(file.name))
+                HashFiles(hash, PathToStr(file.path));
         }
-        else if (FileToStr(file.extension) == "png")
-            hashFile(hash, FileToStr(file.path));
+        else if (PathToStr(file.extension) == "png")
+            HashFile(hash, PathToStr(file.path));
         
         tinydir_next(&dir);
     }
@@ -86,13 +86,13 @@ void hashFiles(size_t& hash, const string& root)
     tinydir_close(&dir);
 }
 
-void hashData(size_t& hash, const char* data, size_t size)
+void HashData(size_t& hash, const char* data, size_t size)
 {
     string str(data, size);
-    hashCombine(hash, str);
+    HashCombine(hash, str);
 }
 
-bool loadHash(size_t& hash, const string& file)
+bool LoadHash(size_t& hash, const string& file)
 {
     ifstream stream(file);
     if (stream)
@@ -105,7 +105,7 @@ bool loadHash(size_t& hash, const string& file)
     return false;
 }
 
-void saveHash(size_t hash, const string& file)
+void SaveHash(size_t hash, const string& file)
 {
     ofstream stream(file);
     stream << hash;
