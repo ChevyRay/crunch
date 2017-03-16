@@ -53,8 +53,8 @@ struct Packer
     Packer(int width, int height);
     void Pack(vector<Bitmap*>& bitmaps, bool verbose, int reduce);
     void SavePng(const string& file);
-    void SaveXml(const string& name, ofstream& xml);
-    void SaveBin(const string& name, ofstream& bin);
+    void SaveXml(const string& name, ofstream& xml, bool trim);
+    void SaveBin(const string& name, ofstream& bin, bool trim);
 };
 
 #endif

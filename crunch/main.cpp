@@ -50,10 +50,10 @@
             [int16] img_y
             [int16] img_width
             [int16] img_height
-            [int16] img_frame_x
-            [int16] img_frame_y
-            [int16] img_frame_width
-            [int16] img_frame_height
+            [int16] img_frame_x         (if --trim enabled)
+            [int16] img_frame_y         (if --trim enabled)
+            [int16] img_frame_width     (if --trim enabled)
+            [int16] img_frame_height    (if --trim enabled)
  */
 
 #include <iostream>
@@ -239,7 +239,7 @@ int main(int argc, const char* argv[])
         ofstream bin(outputDir + name + ".bin", ios::binary);
         WriteShort(bin, (int16_t)packers.size());
         for (size_t i = 0; i < packers.size(); ++i)
-            packers[i]->SaveBin(name + to_string(i), bin);
+            packers[i]->SaveBin(name + to_string(i), bin, trim);
         bin.close();
     }
     
@@ -252,7 +252,7 @@ int main(int argc, const char* argv[])
         ofstream xml(outputDir + name + ".xml");
         xml << "<atlas>" << endl;
         for (size_t i = 0; i < packers.size(); ++i)
-            packers[i]->SaveXml(name + to_string(i), xml);
+            packers[i]->SaveXml(name + to_string(i), xml, trim);
         xml << "</atlas>";
     }
     

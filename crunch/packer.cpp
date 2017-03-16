@@ -94,7 +94,7 @@ void Packer::SavePng(const string& file)
     bitmap.SaveAs(file);
 }
 
-void Packer::SaveXml(const string& name, ofstream& xml)
+void Packer::SaveXml(const string& name, ofstream& xml, bool trim)
 {
     xml << "\t<tex n=\"" << name << "\">" << endl;
     for (size_t i = 0, j = bitmaps.size(); i < j; ++i)
@@ -104,15 +104,19 @@ void Packer::SaveXml(const string& name, ofstream& xml)
         xml << "y=\"" << points[i].y << "\" ";
         xml << "w=\"" << bitmaps[i]->width << "\" ";
         xml << "h=\"" << bitmaps[i]->height << "\" ";
-        xml << "fx=\"" << bitmaps[i]->frameX << "\" ";
-        xml << "fy=\"" << bitmaps[i]->frameY << "\" ";
-        xml << "fw=\"" << bitmaps[i]->frameW << "\" ";
-        xml << "fh=\"" << bitmaps[i]->frameH << "\"/>" << endl;
+        if (trim)
+        {
+            xml << "fx=\"" << bitmaps[i]->frameX << "\" ";
+            xml << "fy=\"" << bitmaps[i]->frameY << "\" ";
+            xml << "fw=\"" << bitmaps[i]->frameW << "\" ";
+            xml << "fh=\"" << bitmaps[i]->frameH << "\" ";
+        }
+        xml << "/>" << endl;
     }
     xml << "\t</tex>" << endl;
 }
 
-void Packer::SaveBin(const string& name, ofstream& bin)
+void Packer::SaveBin(const string& name, ofstream& bin, bool trim)
 {
     WriteString(bin, name);
     WriteShort(bin, (int16_t)bitmaps.size());
@@ -123,9 +127,12 @@ void Packer::SaveBin(const string& name, ofstream& bin)
         WriteShort(bin, (int16_t)points[i].x);
         WriteShort(bin, (int16_t)bitmaps[i]->width);
         WriteShort(bin, (int16_t)bitmaps[i]->height);
-        WriteShort(bin, (int16_t)bitmaps[i]->frameX);
-        WriteShort(bin, (int16_t)bitmaps[i]->frameY);
-        WriteShort(bin, (int16_t)bitmaps[i]->frameW);
-        WriteShort(bin, (int16_t)bitmaps[i]->frameH);
+        if (trim)
+        {
+            WriteShort(bin, (int16_t)bitmaps[i]->frameX);
+            WriteShort(bin, (int16_t)bitmaps[i]->frameY);
+            WriteShort(bin, (int16_t)bitmaps[i]->frameW);
+            WriteShort(bin, (int16_t)bitmaps[i]->frameH);
+        }
     }
 }
