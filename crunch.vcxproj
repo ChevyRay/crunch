@@ -22,21 +22,25 @@
     <ClInclude Include="crunch\binary.hpp" />
     <ClInclude Include="crunch\bitmap.hpp" />
     <ClInclude Include="crunch\GuillotineBinPack.h" />
+    <ClInclude Include="crunch\hash.hpp" />
     <ClInclude Include="crunch\lodepng.h" />
     <ClInclude Include="crunch\MaxRectsBinPack.h" />
     <ClInclude Include="crunch\packer.hpp" />
     <ClInclude Include="crunch\Rect.h" />
+    <ClInclude Include="crunch\str.hpp" />
     <ClInclude Include="crunch\tinydir.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="crunch\binary.cpp" />
     <ClCompile Include="crunch\bitmap.cpp" />
     <ClCompile Include="crunch\GuillotineBinPack.cpp" />
+    <ClCompile Include="crunch\hash.cpp" />
     <ClCompile Include="crunch\lodepng.cpp" />
     <ClCompile Include="crunch\main.cpp" />
     <ClCompile Include="crunch\MaxRectsBinPack.cpp" />
     <ClCompile Include="crunch\packer.cpp" />
     <ClCompile Include="crunch\Rect.cpp" />
+    <ClCompile Include="crunch\str.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{45DC29F9-10AB-4642-BE8F-CA01203EDF17}</ProjectGuid>
