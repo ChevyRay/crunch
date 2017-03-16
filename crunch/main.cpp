@@ -198,6 +198,12 @@ int main(int argc, const char* argv[])
         }
     }
     
+    //Make sure output directory exists.
+    struct stat fileStat;
+    if(stat(outputDir.c_str(), &fileState) == -1) {
+        mkdir(outputDir.c_str(), 0775); //May only work on OSX.
+    }
+    
     //Remove old files
     RemoveFile(outputDir + name + ".hash");
     RemoveFile(outputDir + name + ".bin");
