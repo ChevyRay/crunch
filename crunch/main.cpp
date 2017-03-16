@@ -1,3 +1,38 @@
+/*
+ crunch - command line texture packer
+ ====================================
+ 
+ usage:
+    crunch [INPUT_DIR] [OUTPUT_DIR] [OPTIONS...]
+ 
+ example:
+    crunch assets/characters bin/atlases -p -t -v -rs
+ 
+ options:
+    -b  --binary            saves the atlas data as .bin file (instead of xml)
+    -bx --binaryxml         saves the atlas data as both .bin file and .xml file
+    -p  --premultiply       premultiplies the pixels of the bitmaps by their alpha channel
+    -t  --trim              trims excess transparency off the bitmaps
+    -v  --verbose           print to the debug console as the packer works
+    -f  --force             ignore the hash, forcing the packer to repack
+    -r  --reduce            removes duplicate bitmaps from the atlas by hash comparison
+    -rs --reducestrict      removes duplicate bitmaps fro the atlas by strict comparison
+ 
+ binary format:
+    [int16] num_textures (below block is repeated this many times)
+        [string] name
+        [int16] num_images (below block is repeated this many times)
+            [string] img_name
+            [int16] img_x
+            [int16] img_y
+            [int16] img_width
+            [int16] img_height
+            [int16] img_frame_x
+            [int16] img_frame_y
+            [int16] img_frame_width
+            [int16] img_frame_height
+ */
+
 #include <iostream>
 #include <fstream>
 #include <streambuf>
@@ -90,8 +125,6 @@ int main(int argc, const char* argv[])
     //Get the input/output directories
     string inputDir = argv[1];
     string outputDir = argv[2];
-    //string inputDir = "/Users/ChevyRay/Desktop/crunch_test/assets/chars";
-    //string outputDir = "/Users/ChevyRay/Desktop/crunch_test/bin";
     string name = getFileName(inputDir);
     inputDir += '/';
     outputDir += '/';
@@ -166,15 +199,6 @@ int main(int argc, const char* argv[])
             cout << "\tfinished packing: " << name << to_string(packers.size() - 1) << " (" << packer->width << " x " << packer->height << ')' << endl;
     }
     
-    //FORMAT:
-    //num_textures (int16)
-    //TEXTURE:
-    //  name (string)
-    //  num_images (int16)
-    //  IMAGES:
-    //      name (string)
-    //      x, y, fx, fy, fw, fh (int16)
-    
     //Save the atlas image
     for (size_t i = 0; i < packers.size(); ++i)
     {
@@ -194,30 +218,6 @@ int main(int argc, const char* argv[])
         for (size_t i = 0; i < packers.size(); ++i)
             packers[i]->SaveBin(name + to_string(i), bin);
         bin.close();
-        
-        //Test binary output
-        /*ifstream in(outputDir + name + ".bin");
-        int16_t num_textures = ReadShort(in);
-        cout << "num_textures: " << num_textures << endl;
-        for (int16_t i = 0; i < num_textures; ++i)
-        {
-            string tex_name = ReadString(in);
-            cout << "\ttex_name: " << tex_name << endl;
-            int16_t num_images = ReadShort(in);
-            cout << "\tnum_images: " << num_images << endl;
-            for (int16_t j = 0; j < num_images; ++j)
-            {
-                cout << "\t\t" << ReadString(in)
-                << " x: " << ReadShort(in)
-                << " y: " << ReadShort(in)
-                << " w: " << ReadShort(in)
-                << " h: " << ReadShort(in)
-                << " fx: " << ReadShort(in)
-                << " fy: " << ReadShort(in)
-                << " fw: " << ReadShort(in)
-                << " fh: " << ReadShort(in) << endl;
-            }
-        }*/
     }
     
     //Save the atlas xml

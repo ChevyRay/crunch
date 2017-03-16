@@ -17,6 +17,7 @@
 		1BD766CA1E79C94900523C03 /* binary.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1BD766C81E79C94900523C03 /* binary.cpp */; };
 		1BD766CD1E79FB5500523C03 /* hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1BD766CB1E79FB5500523C03 /* hash.cpp */; };
 		1BD766D01E79FBFD00523C03 /* str.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1BD766CE1E79FBFD00523C03 /* str.cpp */; };
+		1BD766D31E7A147300523C03 /* test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1BD766D11E7A147300523C03 /* test.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -53,6 +54,8 @@
 		1BD766CC1E79FB5500523C03 /* hash.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = hash.hpp; sourceTree = "<group>"; };
 		1BD766CE1E79FBFD00523C03 /* str.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = str.cpp; sourceTree = "<group>"; };
 		1BD766CF1E79FBFD00523C03 /* str.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = str.hpp; sourceTree = "<group>"; };
+		1BD766D11E7A147300523C03 /* test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = test.cpp; sourceTree = "<group>"; };
+		1BD766D21E7A147300523C03 /* test.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = test.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,6 +108,8 @@
 				1BD766CC1E79FB5500523C03 /* hash.hpp */,
 				1BD766CE1E79FBFD00523C03 /* str.cpp */,
 				1BD766CF1E79FBFD00523C03 /* str.hpp */,
+				1BD766D11E7A147300523C03 /* test.cpp */,
+				1BD766D21E7A147300523C03 /* test.hpp */,
 			);
 			path = crunch;
 			sourceTree = "<group>";
@@ -171,6 +176,7 @@
 				1BD766CD1E79FB5500523C03 /* hash.cpp in Sources */,
 				1B761F8C1E78ECBE00E2E4FC /* GuillotineBinPack.cpp in Sources */,
 				1BD1CE521E78EC44009C02A2 /* main.cpp in Sources */,
+				1BD766D31E7A147300523C03 /* test.cpp in Sources */,
 				1B08AF1B1E79026300CD496C /* bitmap.cpp in Sources */,
 				1BD766C51E79241600523C03 /* lodepng.cpp in Sources */,
 				1B761F8E1E78ECBE00E2E4FC /* Rect.cpp in Sources */,
