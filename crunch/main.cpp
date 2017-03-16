@@ -32,8 +32,9 @@
     crunch assets/characters bin/atlases -p -t -v -u -r
  
  options:
-    -b  --binary            saves the atlas data as .bin file (instead of xml)
-    -bx --binaryxml         saves the atlas data as both .bin file and .xml file
+    -x  --xml               saves the atlas data as a .xml file
+    -b  --binary            saves the atlas data as a .bin file
+    -j  --json              saves the atlas data as a .json file
     -p  --premultiply       premultiplies the pixels of the bitmaps by their alpha channel
     -t  --trim              trims excess transparency off the bitmaps
     -v  --verbose           print to the debug console as the packer works
@@ -76,8 +77,9 @@ using namespace std;
 
 static int optSize;
 static int optPadding;
+static bool optXml;
 static bool optBinary;
-static bool optBinaryXml;
+static bool optJson;
 static bool optPremultiply;
 static bool optTrim;
 static bool optVerbose;
@@ -186,8 +188,9 @@ int main(int argc, const char* argv[])
     //Get the options
     optSize = 4096;
     optPadding = 1;
+    optXml = false;
     optBinary = false;
-    optBinaryXml = false;
+    optJson = false;
     optPremultiply = false;
     optTrim = false;
     optVerbose = false;
@@ -196,10 +199,12 @@ int main(int argc, const char* argv[])
     for (int i = 3; i < argc; ++i)
     {
         string arg = argv[i];
-        if (arg == "-b" || arg == "--binary")
+        if (arg == "-x" || arg == "--xml")
+            optXml = true;
+        else if (arg == "-b" || arg == "--binary")
             optBinary = true;
-        else if (arg == "-bx" || arg == "--binaryxml")
-            optBinaryXml = true;
+        else if (arg == "-j" || arg == "--json")
+            optJson = true;
         else if (arg == "-p" || arg == "--premultiply")
             optPremultiply = true;
         else if (arg == "-t" || arg == "--trim")
@@ -246,6 +251,7 @@ int main(int argc, const char* argv[])
     RemoveFile(outputDir + name + ".hash");
     RemoveFile(outputDir + name + ".bin");
     RemoveFile(outputDir + name + ".xml");
+    RemoveFile(outputDir + name + ".json");
     for (size_t i = 0; i < 16; ++i)
         RemoveFile(outputDir + name + to_string(i) + ".png");
     
@@ -284,7 +290,7 @@ int main(int argc, const char* argv[])
     }
     
     //Save the atlas binary
-    if (optBinary || optBinaryXml)
+    if (optBinary)
     {
         if (optVerbose)
             cout << "writing bin: " << outputDir << name << ".bin" << endl;
@@ -297,7 +303,7 @@ int main(int argc, const char* argv[])
     }
     
     //Save the atlas xml
-    if (!optBinary || optBinaryXml)
+    if (optXml)
     {
         if (optVerbose)
             cout << "writing xml: " << outputDir << name << ".xml" << endl;
@@ -307,6 +313,28 @@ int main(int argc, const char* argv[])
         for (size_t i = 0; i < packers.size(); ++i)
             packers[i]->SaveXml(name + to_string(i), xml, optTrim, optRotate);
         xml << "</atlas>";
+    }
+    
+    //Save the atlas json
+    if (optJson)
+    {
+        if (optVerbose)
+            cout << "writing json: " << outputDir << name << ".json" << endl;
+        
+        ofstream json(outputDir + name + ".json");
+        json << '{' << endl;
+        json << "\t\"textures\":[" << endl;
+        for (size_t i = 0; i < packers.size(); ++i)
+        {
+            json << "\t\t{" << endl;
+            packers[i]->SaveJson(name + to_string(i), json, optTrim, optRotate);
+            json << "\t\t}";
+            if (i + 1 < packers.size())
+                json << ',';
+            json << endl;
+        }
+        json << "\t]" << endl;
+        json << '}';
     }
     
     //Save the new hash

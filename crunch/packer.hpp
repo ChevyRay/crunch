@@ -57,6 +57,7 @@ struct Packer
     void SavePng(const string& file);
     void SaveXml(const string& name, ofstream& xml, bool trim, bool rotate);
     void SaveBin(const string& name, ofstream& bin, bool trim, bool rotate);
+    void SaveJson(const string& name, ofstream& json, bool trim, bool rotate);
 };
 
 #endif

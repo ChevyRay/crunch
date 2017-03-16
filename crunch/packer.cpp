@@ -162,3 +162,29 @@ void Packer::SaveBin(const string& name, ofstream& bin, bool trim, bool rotate)
             WriteByte(bin, points[i].rot ? 1 : 0);
     }
 }
+
+void Packer::SaveJson(const string& name, ofstream& json, bool trim, bool rotate)
+{
+    json << "\t\t\t\"name\":\"" << name << "\"," << endl;
+    json << "\t\t\t\"images\":[" << endl;
+    for (size_t i = 0, j = bitmaps.size(); i < j; ++i)
+    {
+        json << "\t\t\t\t{ ";
+        json << "\"n\":\"" << bitmaps[i]->name << "\", ";
+        json << "\"x\":" << points[i].x << ", ";
+        json << "\"y\":" << points[i].y << ", ";
+        json << "\"w\":" << bitmaps[i]->width << ", ";
+        json << "\"h\":" << bitmaps[i]->height;
+        if (trim)
+        {
+            json << ", \"fx\":" << bitmaps[i]->frameX << ", ";
+            json << "\"fy\":" << bitmaps[i]->frameY << ", ";
+            json << "\"fw\":" << bitmaps[i]->frameW << ", ";
+            json << "\"fh\":" << bitmaps[i]->frameH;
+        }
+        if (rotate)
+            json << ", \"r\":" << (points[i].rot ? "true" : "false");
+        json << " }," << endl;
+    }
+    json << "\t\t\t]" << endl;
+}
