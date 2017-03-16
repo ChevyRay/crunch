@@ -2,7 +2,7 @@
 
 *Copyright (c) 2017 Chevy Ray Johnston*
 
-This is a command line tool that will pack a bunch of images into a single, larger image. It only works with 32-bit RGBA PNG files.
+This is a command line tool that will pack a bunch of images into a single, larger image. It was designed for [Celeste](http://www.celestegame.com/), but could be very helpful for other games.
 
 ### Features
 
@@ -13,6 +13,7 @@ This is a command line tool that will pack a bunch of images into a single, larg
 - Recursively scans folders
 - Remove duplicate images
 - Caching to prevent redundant builds
+- Multi-image atlas when the sprites don't fit
 
 ### What does it do?
 
