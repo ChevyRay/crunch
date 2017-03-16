@@ -32,6 +32,7 @@
     crunch assets/characters bin/atlases -p -t -v -u -r
  
  options:
+    -d  --default           use default settings (-x -p -t -u)
     -x  --xml               saves the atlas data as a .xml file
     -b  --binary            saves the atlas data as a .bin file
     -j  --json              saves the atlas data as a .json file
@@ -39,7 +40,7 @@
     -t  --trim              trims excess transparency off the bitmaps
     -v  --verbose           print to the debug console as the packer works
     -f  --force             ignore the hash, forcing the packer to repack
-    -u  --unique            removes duplicate bitmaps from the atlas by hash comparison
+    -u  --unique            remove duplicate bitmaps from the atlas
     -r  --rotate            enabled rotating bitmaps 90 degrees clockwise when packing
     -s# --size#             max atlas size (# can be 4096, 2048, 1024, 512, or 256)
     -p# --pad#              padding between images (# can be from 0 to 16)
@@ -199,7 +200,9 @@ int main(int argc, const char* argv[])
     for (int i = 3; i < argc; ++i)
     {
         string arg = argv[i];
-        if (arg == "-x" || arg == "--xml")
+        if (arg == "-d" || arg == "--default")
+            optXml = optPremultiply = optTrim = optUnique = true;
+        else if (arg == "-x" || arg == "--xml")
             optXml = true;
         else if (arg == "-b" || arg == "--binary")
             optBinary = true;
