@@ -41,6 +41,7 @@
     -u  --unique            removes duplicate bitmaps from the atlas by hash comparison
     -r  --rotate            enabled rotating bitmaps 90 degrees clockwise when packing
     -s# --size#             max atlas size (# can be 4096, 2048, 1024, 512, or 256)
+    -p# --pad#              padding between images (# can be from 0 to 16)
  
  binary format:
     [int16] num_textures (below block is repeated this many times)
@@ -73,7 +74,8 @@
 
 using namespace std;
 
-static int packSize;
+static int optSize;
+static int optPadding;
 static bool optBinary;
 static bool optBinaryXml;
 static bool optPremultiply;
@@ -151,6 +153,16 @@ static int GetPackSize(const string& str)
     return 0;
 }
 
+static int GetPadding(const string& str)
+{
+    for (int i = 0; i <= 16; ++i)
+        if (str == to_string(i))
+            return i;
+    cerr << "invalid padding value: " << str << endl;
+    exit(EXIT_FAILURE);
+    return 1;
+}
+
 int main(int argc, const char* argv[])
 {
     //Print out passed arguments
@@ -172,7 +184,8 @@ int main(int argc, const char* argv[])
     outputDir += '/';
     
     //Get the options
-    packSize = 4096;
+    optSize = 4096;
+    optPadding = 1;
     optBinary = false;
     optBinaryXml = false;
     optPremultiply = false;
@@ -200,9 +213,18 @@ int main(int argc, const char* argv[])
         else if (arg == "-r" || arg == "--rotate")
             optRotate = true;
         else if (arg.find("--size") == 0)
-            packSize = GetPackSize(arg.substr(6));
+            optSize = GetPackSize(arg.substr(6));
         else if (arg.find("-s") == 0)
-            packSize = GetPackSize(arg.substr(2));
+            optSize = GetPackSize(arg.substr(2));
+        else if (arg.find("--pad") == 0)
+            optPadding = GetPadding(arg.substr(5));
+        else if (arg.find("-p") == 0)
+            optPadding = GetPadding(arg.substr(2));
+        else
+        {
+            cerr << "unexpected argument: " << arg << endl;
+            return EXIT_FAILURE;
+        }
     }
     
     //Hash the input directory
@@ -240,7 +262,7 @@ int main(int argc, const char* argv[])
     {
         if (optVerbose)
             cout << "packing " << bitmaps.size() << " images..." << endl;
-        auto packer = new Packer(packSize, packSize);
+        auto packer = new Packer(optSize, optSize, optPadding);
         packer->Pack(bitmaps, optVerbose, optUnique, optRotate);
         packers.push_back(packer);
         if (optVerbose)

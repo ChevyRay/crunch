@@ -34,8 +34,8 @@
 using namespace std;
 using namespace rbp;
 
-Packer::Packer(int width, int height)
-: width(width), height(height)
+Packer::Packer(int width, int height, int pad)
+: width(width), height(height), pad(pad)
 {
     
 }
@@ -70,7 +70,7 @@ void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose, bool unique, bool rota
         
         //If it's not a duplicate, pack it into the atlas
         {
-            Rect rect = packer.Insert(bitmap->width + 1, bitmap->height + 1, rotate, MaxRectsBinPack::RectBestShortSideFit);
+            Rect rect = packer.Insert(bitmap->width + pad, bitmap->height + pad, rotate, MaxRectsBinPack::RectBestShortSideFit);
             
             if (rect.width == 0 || rect.height == 0)
                 break;
@@ -83,7 +83,7 @@ void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose, bool unique, bool rota
             p.x = rect.x;
             p.y = rect.y;
             p.dupID = -1;
-            p.rot = rotate && bitmap->width != (rect.width - 1);
+            p.rot = rotate && bitmap->width != (rect.width - pad);
             
             points.push_back(p);
             this->bitmaps.push_back(bitmap);

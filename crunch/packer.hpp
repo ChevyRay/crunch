@@ -46,12 +46,13 @@ struct Packer
 {
     int width;
     int height;
+    int pad;
     
     vector<Bitmap*> bitmaps;
     vector<Point> points;
     unordered_map<size_t, int> dupLookup;
     
-    Packer(int width, int height);
+    Packer(int width, int height, int pad);
     void Pack(vector<Bitmap*>& bitmaps, bool verbose, bool unique, bool rotate);
     void SavePng(const string& file);
     void SaveXml(const string& name, ofstream& xml, bool trim, bool rotate);

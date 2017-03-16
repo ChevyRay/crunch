@@ -62,6 +62,7 @@ For example...
 | -u            | --unique      | removes duplicate bitmaps from the atlas by hash comparison
 | -r            | --rotate      | enabled rotating bitmaps 90 degrees clockwise when packing
 | -s#           | --size#       | max atlas size (# can be 4096, 2048, 1024, 512, or 256)
+| -p#           | --pad#        | padding between images (# can be from 0 to 16)
 
 ### Binary Format
 
