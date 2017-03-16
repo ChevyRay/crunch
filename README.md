@@ -82,10 +82,9 @@ For example...
 
 ### License
 
-```
-Unless otherwise specified in a source file, everything
-in this project falls under the following license:
+Unless otherwise specified in a source file, everything in this project falls under the following license:
 
+```
 MIT License
 
 Copyright (c) 2017 Chevy Ray Johnston
