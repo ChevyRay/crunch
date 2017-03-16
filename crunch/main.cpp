@@ -38,8 +38,8 @@
     -t  --trim              trims excess transparency off the bitmaps
     -v  --verbose           print to the debug console as the packer works
     -f  --force             ignore the hash, forcing the packer to repack
-    -r  --reduce            removes duplicate bitmaps from the atlas by hash comparison
-    -rs --reducestrict      removes duplicate bitmaps fro the atlas by strict comparison
+    -u  --unique            removes duplicate bitmaps from the atlas by hash comparison
+    -us --uniquestrict      removes duplicate bitmaps fro the atlas by strict comparison
  
  binary format:
     [int16] num_textures (below block is repeated this many times)
@@ -54,6 +54,7 @@
             [int16] img_frame_y         (if --trim enabled)
             [int16] img_frame_width     (if --trim enabled)
             [int16] img_frame_height    (if --trim enabled)
+            [byte] img_rotated          (if --rotate enabled)
  */
 
 #include <iostream>
@@ -73,13 +74,14 @@
 
 using namespace std;
 
-static bool binary;
-static bool binaryXml;
-static bool premultiply;
-static bool trim;
-static bool verbose;
-static bool force;
-static int reduce;
+static bool optBinary;
+static bool optBinaryXml;
+static bool optPremultiply;
+static bool optTrim;
+static bool optVerbose;
+static bool optForce;
+static int optUnique;
+static bool optRotate;
 static vector<Bitmap*> bitmaps;
 static vector<Packer*> packers;
 
@@ -115,10 +117,10 @@ static void loadBitmaps(const string& root, const string& prefix)
         }
         else if (FileToStr(file.extension) == "png")
         {
-            if (verbose)
+            if (optVerbose)
                 cout << '\t' << FileToStr(file.path) << endl;
             
-            bitmaps.push_back(new Bitmap(FileToStr(file.path), prefix + getFileName(FileToStr(file.path)), premultiply, trim));
+            bitmaps.push_back(new Bitmap(FileToStr(file.path), prefix + getFileName(FileToStr(file.path)), optPremultiply, optTrim));
         }
         
         tinydir_next(&dir);
@@ -153,31 +155,34 @@ int main(int argc, const char* argv[])
     outputDir += '/';
     
     //Get the options
-    binary = false;
-    binaryXml = false;
-    premultiply = false;
-    trim = false;
-    verbose = false;
-    reduce = 0;
+    optBinary = false;
+    optBinaryXml = false;
+    optPremultiply = false;
+    optTrim = false;
+    optVerbose = false;
+    optForce = false;
+    optUnique = 0;
     for (int i = 3; i < argc; ++i)
     {
         string arg = argv[i];
         if (arg == "-b" || arg == "--binary")
-            binary = true;
+            optBinary = true;
         if (arg == "-bx" || arg == "--binaryxml")
-            binaryXml = true;
+            optBinaryXml = true;
         if (arg == "-p" || arg == "--premultiply")
-            premultiply = true;
+            optPremultiply = true;
         if (arg == "-t" || arg == "--trim")
-            trim = true;
+            optTrim = true;
         if (arg == "-v" || arg == "--verbose")
-            verbose = true;
+            optVerbose = true;
         if (arg == "-f" || arg == "--force")
-            force = true;
-        if (arg == "-r" || arg == "--reduce")
-            reduce = 1;
-        if (arg == "-rs" || arg == "--reducestrict")
-            reduce = 2;
+            optForce = true;
+        if (arg == "-u" || arg == "--unique")
+            optUnique = 1;
+        if (arg == "-us" || arg == "--uniquestrict")
+            optUnique = 2;
+        if (arg == "-r" || arg == "--rotate")
+            optRotate = true;
     }
     
     //Hash the input directory
@@ -188,7 +193,7 @@ int main(int argc, const char* argv[])
     size_t oldHash;
     if (loadHash(oldHash, outputDir + name + ".hash"))
     {
-        if (!force && newHash == oldHash)
+        if (!optForce && newHash == oldHash)
         {
             cout << "atlas is unchanged: " << name << endl;
             return EXIT_SUCCESS;
@@ -203,7 +208,7 @@ int main(int argc, const char* argv[])
         RemoveFile(outputDir + name + to_string(i) + ".png");
     
     //Load the bitmaps and sort them by area
-    if (verbose)
+    if (optVerbose)
         cout << "loading images..." << endl;
     loadBitmaps(inputDir, "");
     sort(bitmaps.begin(), bitmaps.end(), [](const Bitmap* a, const Bitmap* b) {
@@ -213,46 +218,46 @@ int main(int argc, const char* argv[])
     //Pack the bitmaps
     while (!bitmaps.empty())
     {
-        if (verbose)
+        if (optVerbose)
             cout << "packing " << bitmaps.size() << " images..." << endl;
         auto packer = new Packer(PACK_SIZE, PACK_SIZE);
-        packer->Pack(bitmaps, verbose, reduce);
+        packer->Pack(bitmaps, optVerbose, optUnique, optRotate);
         packers.push_back(packer);
-        if (verbose)
+        if (optVerbose)
             cout << "\tfinished packing: " << name << to_string(packers.size() - 1) << " (" << packer->width << " x " << packer->height << ')' << endl;
     }
     
     //Save the atlas image
     for (size_t i = 0; i < packers.size(); ++i)
     {
-        if (verbose)
+        if (optVerbose)
             cout << "writing png: " << outputDir << name << to_string(i) << ".png" << endl;
         packers[i]->SavePng(outputDir + name + to_string(i) + ".png");
     }
     
     //Save the atlas binary
-    if (binary || binaryXml)
+    if (optBinary || optBinaryXml)
     {
-        if (verbose)
+        if (optVerbose)
             cout << "writing bin: " << outputDir << name << ".bin" << endl;
         
         ofstream bin(outputDir + name + ".bin", ios::binary);
         WriteShort(bin, (int16_t)packers.size());
         for (size_t i = 0; i < packers.size(); ++i)
-            packers[i]->SaveBin(name + to_string(i), bin, trim);
+            packers[i]->SaveBin(name + to_string(i), bin, optTrim, optRotate);
         bin.close();
     }
     
     //Save the atlas xml
-    if (!binary || binaryXml)
+    if (!optBinary || optBinaryXml)
     {
-        if (verbose)
+        if (optVerbose)
             cout << "writing xml: " << outputDir << name << ".xml" << endl;
         
         ofstream xml(outputDir + name + ".xml");
         xml << "<atlas>" << endl;
         for (size_t i = 0; i < packers.size(); ++i)
-            packers[i]->SaveXml(name + to_string(i), xml, trim);
+            packers[i]->SaveXml(name + to_string(i), xml, optTrim, optRotate);
         xml << "</atlas>";
     }
     

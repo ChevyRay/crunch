@@ -48,7 +48,7 @@ void MaxRectsBinPack::Init(int width, int height)
 	freeRectangles.push_back(n);
 }
 
-Rect MaxRectsBinPack::Insert(int width, int height, FreeRectChoiceHeuristic method)
+Rect MaxRectsBinPack::Insert(int width, int height, bool rot, FreeRectChoiceHeuristic method)
 {
 	Rect newNode;
 	// Unused in this function. We don't need to know the score after finding the position.
@@ -56,11 +56,11 @@ Rect MaxRectsBinPack::Insert(int width, int height, FreeRectChoiceHeuristic meth
 	int score2 = std::numeric_limits<int>::max();
 	switch(method)
 	{
-		case RectBestShortSideFit: newNode = FindPositionForNewNodeBestShortSideFit(width, height, score1, score2); break;
-		case RectBottomLeftRule: newNode = FindPositionForNewNodeBottomLeft(width, height, score1, score2); break;
-		case RectContactPointRule: newNode = FindPositionForNewNodeContactPoint(width, height, score1); break;
-		case RectBestLongSideFit: newNode = FindPositionForNewNodeBestLongSideFit(width, height, score2, score1); break;
-		case RectBestAreaFit: newNode = FindPositionForNewNodeBestAreaFit(width, height, score1, score2); break;
+		case RectBestShortSideFit: newNode = FindPositionForNewNodeBestShortSideFit(rot, width, height, score1, score2); break;
+		case RectBottomLeftRule: newNode = FindPositionForNewNodeBottomLeft(rot, width, height, score1, score2); break;
+		case RectContactPointRule: newNode = FindPositionForNewNodeContactPoint(rot, width, height, score1); break;
+		case RectBestLongSideFit: newNode = FindPositionForNewNodeBestLongSideFit(rot, width, height, score2, score1); break;
+		case RectBestAreaFit: newNode = FindPositionForNewNodeBestAreaFit(rot, width, height, score1, score2); break;
 	}
 		
 	if (newNode.height == 0)
@@ -83,7 +83,7 @@ Rect MaxRectsBinPack::Insert(int width, int height, FreeRectChoiceHeuristic meth
 	return newNode;
 }
 
-void MaxRectsBinPack::Insert(std::vector<RectSize> &rects, std::vector<Rect> &dst, FreeRectChoiceHeuristic method)
+void MaxRectsBinPack::Insert(std::vector<RectSize> &rects, std::vector<Rect> &dst, bool rot, FreeRectChoiceHeuristic method)
 {
 	dst.clear();
 
@@ -98,7 +98,7 @@ void MaxRectsBinPack::Insert(std::vector<RectSize> &rects, std::vector<Rect> &ds
 		{
 			int score1;
 			int score2;
-			Rect newNode = ScoreRect(rects[i].width, rects[i].height, method, score1, score2);
+			Rect newNode = ScoreRect(rects[i].width, rects[i].height, rot, method, score1, score2);
 
 			if (score1 < bestScore1 || (score1 == bestScore1 && score2 < bestScore2))
 			{
@@ -136,20 +136,20 @@ void MaxRectsBinPack::PlaceRect(const Rect &node)
 	//		dst.push_back(bestNode); ///\todo Refactor so that this compiles.
 }
 
-Rect MaxRectsBinPack::ScoreRect(int width, int height, FreeRectChoiceHeuristic method, int &score1, int &score2) const
+Rect MaxRectsBinPack::ScoreRect(int width, int height, bool rot, FreeRectChoiceHeuristic method, int &score1, int &score2) const
 {
 	Rect newNode;
 	score1 = std::numeric_limits<int>::max();
 	score2 = std::numeric_limits<int>::max();
 	switch(method)
 	{
-	case RectBestShortSideFit: newNode = FindPositionForNewNodeBestShortSideFit(width, height, score1, score2); break;
-	case RectBottomLeftRule: newNode = FindPositionForNewNodeBottomLeft(width, height, score1, score2); break;
-	case RectContactPointRule: newNode = FindPositionForNewNodeContactPoint(width, height, score1); 
+	case RectBestShortSideFit: newNode = FindPositionForNewNodeBestShortSideFit(rot, width, height, score1, score2); break;
+	case RectBottomLeftRule: newNode = FindPositionForNewNodeBottomLeft(rot, width, height, score1, score2); break;
+	case RectContactPointRule: newNode = FindPositionForNewNodeContactPoint(rot, width, height, score1);
 		score1 = -score1; // Reverse since we are minimizing, but for contact point score bigger is better.
 		break;
-	case RectBestLongSideFit: newNode = FindPositionForNewNodeBestLongSideFit(width, height, score2, score1); break;
-	case RectBestAreaFit: newNode = FindPositionForNewNodeBestAreaFit(width, height, score1, score2); break;
+	case RectBestLongSideFit: newNode = FindPositionForNewNodeBestLongSideFit(rot, width, height, score2, score1); break;
+	case RectBestAreaFit: newNode = FindPositionForNewNodeBestAreaFit(rot, width, height, score1, score2); break;
 	}
 
 	// Cannot fit the current rectangle.
@@ -172,7 +172,7 @@ float MaxRectsBinPack::Occupancy() const
 	return (float)usedSurfaceArea / (binWidth * binHeight);
 }
 
-Rect MaxRectsBinPack::FindPositionForNewNodeBottomLeft(int width, int height, int &bestY, int &bestX) const
+Rect MaxRectsBinPack::FindPositionForNewNodeBottomLeft(bool rot, int width, int height, int &bestY, int &bestX) const
 {
 	Rect bestNode;
 	memset(&bestNode, 0, sizeof(Rect));
@@ -196,24 +196,27 @@ Rect MaxRectsBinPack::FindPositionForNewNodeBottomLeft(int width, int height, in
 				bestX = freeRectangles[i].x;
 			}
 		}
-		if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
-		{
-			int topSideY = freeRectangles[i].y + width;
-			if (topSideY < bestY || (topSideY == bestY && freeRectangles[i].x < bestX))
-			{
-				bestNode.x = freeRectangles[i].x;
-				bestNode.y = freeRectangles[i].y;
-				bestNode.width = height;
-				bestNode.height = width;
-				bestY = topSideY;
-				bestX = freeRectangles[i].x;
-			}
-		}
+        if (rot)
+        {
+            if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
+            {
+                int topSideY = freeRectangles[i].y + width;
+                if (topSideY < bestY || (topSideY == bestY && freeRectangles[i].x < bestX))
+                {
+                    bestNode.x = freeRectangles[i].x;
+                    bestNode.y = freeRectangles[i].y;
+                    bestNode.width = height;
+                    bestNode.height = width;
+                    bestY = topSideY;
+                    bestX = freeRectangles[i].x;
+                }
+            }
+        }
 	}
 	return bestNode;
 }
 
-Rect MaxRectsBinPack::FindPositionForNewNodeBestShortSideFit(int width, int height, 
+Rect MaxRectsBinPack::FindPositionForNewNodeBestShortSideFit(bool rot, int width, int height,
 	int &bestShortSideFit, int &bestLongSideFit) const
 {
 	Rect bestNode;
@@ -243,29 +246,31 @@ Rect MaxRectsBinPack::FindPositionForNewNodeBestShortSideFit(int width, int heig
 			}
 		}
 
-        //ROTATION DISABLED
-		/*if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
-		{
-			int flippedLeftoverHoriz = abs(freeRectangles[i].width - height);
-			int flippedLeftoverVert = abs(freeRectangles[i].height - width);
-			int flippedShortSideFit = min(flippedLeftoverHoriz, flippedLeftoverVert);
-			int flippedLongSideFit = max(flippedLeftoverHoriz, flippedLeftoverVert);
+        if (rot)
+        {
+            if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
+            {
+                int flippedLeftoverHoriz = abs(freeRectangles[i].width - height);
+                int flippedLeftoverVert = abs(freeRectangles[i].height - width);
+                int flippedShortSideFit = min(flippedLeftoverHoriz, flippedLeftoverVert);
+                int flippedLongSideFit = max(flippedLeftoverHoriz, flippedLeftoverVert);
 
-			if (flippedShortSideFit < bestShortSideFit || (flippedShortSideFit == bestShortSideFit && flippedLongSideFit < bestLongSideFit))
-			{
-				bestNode.x = freeRectangles[i].x;
-				bestNode.y = freeRectangles[i].y;
-				bestNode.width = height;
-				bestNode.height = width;
-				bestShortSideFit = flippedShortSideFit;
-				bestLongSideFit = flippedLongSideFit;
-			}
-		}*/
+                if (flippedShortSideFit < bestShortSideFit || (flippedShortSideFit == bestShortSideFit && flippedLongSideFit < bestLongSideFit))
+                {
+                    bestNode.x = freeRectangles[i].x;
+                    bestNode.y = freeRectangles[i].y;
+                    bestNode.width = height;
+                    bestNode.height = width;
+                    bestShortSideFit = flippedShortSideFit;
+                    bestLongSideFit = flippedLongSideFit;
+                }
+            }
+        }
 	}
 	return bestNode;
 }
 
-Rect MaxRectsBinPack::FindPositionForNewNodeBestLongSideFit(int width, int height, 
+Rect MaxRectsBinPack::FindPositionForNewNodeBestLongSideFit(bool rot, int width, int height,
 	int &bestShortSideFit, int &bestLongSideFit) const
 {
 	Rect bestNode;
@@ -295,28 +300,31 @@ Rect MaxRectsBinPack::FindPositionForNewNodeBestLongSideFit(int width, int heigh
 			}
 		}
 
-		if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
-		{
-			int leftoverHoriz = abs(freeRectangles[i].width - height);
-			int leftoverVert = abs(freeRectangles[i].height - width);
-			int shortSideFit = min(leftoverHoriz, leftoverVert);
-			int longSideFit = max(leftoverHoriz, leftoverVert);
-
-			if (longSideFit < bestLongSideFit || (longSideFit == bestLongSideFit && shortSideFit < bestShortSideFit))
-			{
-				bestNode.x = freeRectangles[i].x;
-				bestNode.y = freeRectangles[i].y;
-				bestNode.width = height;
-				bestNode.height = width;
-				bestShortSideFit = shortSideFit;
-				bestLongSideFit = longSideFit;
-			}
-		}
+        if (rot)
+        {
+            if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
+            {
+                int leftoverHoriz = abs(freeRectangles[i].width - height);
+                int leftoverVert = abs(freeRectangles[i].height - width);
+                int shortSideFit = min(leftoverHoriz, leftoverVert);
+                int longSideFit = max(leftoverHoriz, leftoverVert);
+                
+                if (longSideFit < bestLongSideFit || (longSideFit == bestLongSideFit && shortSideFit < bestShortSideFit))
+                {
+                    bestNode.x = freeRectangles[i].x;
+                    bestNode.y = freeRectangles[i].y;
+                    bestNode.width = height;
+                    bestNode.height = width;
+                    bestShortSideFit = shortSideFit;
+                    bestLongSideFit = longSideFit;
+                }
+            }
+        }
 	}
 	return bestNode;
 }
 
-Rect MaxRectsBinPack::FindPositionForNewNodeBestAreaFit(int width, int height, 
+Rect MaxRectsBinPack::FindPositionForNewNodeBestAreaFit(bool rot, int width, int height,
 	int &bestAreaFit, int &bestShortSideFit) const
 {
 	Rect bestNode;
@@ -347,22 +355,25 @@ Rect MaxRectsBinPack::FindPositionForNewNodeBestAreaFit(int width, int height,
 			}
 		}
 
-		if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
-		{
-			int leftoverHoriz = abs(freeRectangles[i].width - height);
-			int leftoverVert = abs(freeRectangles[i].height - width);
-			int shortSideFit = min(leftoverHoriz, leftoverVert);
-
-			if (areaFit < bestAreaFit || (areaFit == bestAreaFit && shortSideFit < bestShortSideFit))
-			{
-				bestNode.x = freeRectangles[i].x;
-				bestNode.y = freeRectangles[i].y;
-				bestNode.width = height;
-				bestNode.height = width;
-				bestShortSideFit = shortSideFit;
-				bestAreaFit = areaFit;
-			}
-		}
+        if (rot)
+        {
+            if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
+            {
+                int leftoverHoriz = abs(freeRectangles[i].width - height);
+                int leftoverVert = abs(freeRectangles[i].height - width);
+                int shortSideFit = min(leftoverHoriz, leftoverVert);
+                
+                if (areaFit < bestAreaFit || (areaFit == bestAreaFit && shortSideFit < bestShortSideFit))
+                {
+                    bestNode.x = freeRectangles[i].x;
+                    bestNode.y = freeRectangles[i].y;
+                    bestNode.width = height;
+                    bestNode.height = width;
+                    bestShortSideFit = shortSideFit;
+                    bestAreaFit = areaFit;
+                }
+            }
+        }
 	}
 	return bestNode;
 }
@@ -394,7 +405,7 @@ int MaxRectsBinPack::ContactPointScoreNode(int x, int y, int width, int height) 
 	return score;
 }
 
-Rect MaxRectsBinPack::FindPositionForNewNodeContactPoint(int width, int height, int &bestContactScore) const
+Rect MaxRectsBinPack::FindPositionForNewNodeContactPoint(bool rot, int width, int height, int &bestContactScore) const
 {
 	Rect bestNode;
 	memset(&bestNode, 0, sizeof(Rect));
@@ -416,18 +427,22 @@ Rect MaxRectsBinPack::FindPositionForNewNodeContactPoint(int width, int height, 
 				bestContactScore = score;
 			}
 		}
-		if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
-		{
-			int score = ContactPointScoreNode(freeRectangles[i].x, freeRectangles[i].y, height, width);
-			if (score > bestContactScore)
-			{
-				bestNode.x = freeRectangles[i].x;
-				bestNode.y = freeRectangles[i].y;
-				bestNode.width = height;
-				bestNode.height = width;
-				bestContactScore = score;
-			}
-		}
+        
+        if (rot)
+        {
+            if (freeRectangles[i].width >= height && freeRectangles[i].height >= width)
+            {
+                int score = ContactPointScoreNode(freeRectangles[i].x, freeRectangles[i].y, height, width);
+                if (score > bestContactScore)
+                {
+                    bestNode.x = freeRectangles[i].x;
+                    bestNode.y = freeRectangles[i].y;
+                    bestNode.width = height;
+                    bestNode.height = width;
+                    bestContactScore = score;
+                }
+            }
+        }
 	}
 	return bestNode;
 }

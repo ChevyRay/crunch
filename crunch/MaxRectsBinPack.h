@@ -42,10 +42,10 @@ public:
 	/// @param rects The list of rectangles to insert. This vector will be destroyed in the process.
 	/// @param dst [out] This list will contain the packed rectangles. The indices will not correspond to that of rects.
 	/// @param method The rectangle placement rule to use when packing.
-	void Insert(std::vector<RectSize> &rects, std::vector<Rect> &dst, FreeRectChoiceHeuristic method);
+	void Insert(std::vector<RectSize> &rects, std::vector<Rect> &dst, bool rot, FreeRectChoiceHeuristic method);
 
 	/// Inserts a single rectangle into the bin, possibly rotated.
-	Rect Insert(int width, int height, FreeRectChoiceHeuristic method);
+	Rect Insert(int width, int height, bool rot, FreeRectChoiceHeuristic method);
 
 	/// Computes the ratio of used surface area to the total bin area.
 	float Occupancy() const;
@@ -61,7 +61,7 @@ private:
 	/// @param score1 [out] The primary placement score will be outputted here.
 	/// @param score2 [out] The secondary placement score will be outputted here. This isu sed to break ties.
 	/// @return This struct identifies where the rectangle would be placed if it were placed.
-	Rect ScoreRect(int width, int height, FreeRectChoiceHeuristic method, int &score1, int &score2) const;
+	Rect ScoreRect(int width, int height, bool rot, FreeRectChoiceHeuristic method, int &score1, int &score2) const;
 
 	/// Places the given rectangle into the bin.
 	void PlaceRect(const Rect &node);
@@ -69,11 +69,11 @@ private:
 	/// Computes the placement score for the -CP variant.
 	int ContactPointScoreNode(int x, int y, int width, int height) const;
 
-	Rect FindPositionForNewNodeBottomLeft(int width, int height, int &bestY, int &bestX) const;
-	Rect FindPositionForNewNodeBestShortSideFit(int width, int height, int &bestShortSideFit, int &bestLongSideFit) const;
-	Rect FindPositionForNewNodeBestLongSideFit(int width, int height, int &bestShortSideFit, int &bestLongSideFit) const;
-	Rect FindPositionForNewNodeBestAreaFit(int width, int height, int &bestAreaFit, int &bestShortSideFit) const;
-	Rect FindPositionForNewNodeContactPoint(int width, int height, int &contactScore) const;
+	Rect FindPositionForNewNodeBottomLeft(bool rot, int width, int height, int &bestY, int &bestX) const;
+	Rect FindPositionForNewNodeBestShortSideFit(bool rot, int width, int height, int &bestShortSideFit, int &bestLongSideFit) const;
+	Rect FindPositionForNewNodeBestLongSideFit(bool rot, int width, int height, int &bestShortSideFit, int &bestLongSideFit) const;
+	Rect FindPositionForNewNodeBestAreaFit(bool rot, int width, int height, int &bestAreaFit, int &bestShortSideFit) const;
+	Rect FindPositionForNewNodeContactPoint(bool rot, int width, int height, int &contactScore) const;
 
 	/// @return True if the free node was split.
 	bool SplitFreeNode(Rect freeNode, const Rect &usedNode);

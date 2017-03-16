@@ -40,7 +40,7 @@ Packer::Packer(int width, int height)
     
 }
 
-void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose, int reduce)
+void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose, int unique, bool rotate)
 {
     MaxRectsBinPack packer(width, height);
     
@@ -55,21 +55,30 @@ void Packer::Pack(vector<Bitmap*>& bitmaps, bool verbose, int reduce)
         
         //Check to see if this is a duplicate of an already packed bitmap
         auto di = dupLookup.find(bitmap->hashValue);
-        if (reduce > 0 && di != dupLookup.end() && (reduce < 2 || bitmap->Equals(bitmaps[di->second])))
+        if (unique > 0 && di != dupLookup.end() && (unique < 2 || bitmap->Equals(bitmaps[di->second])))
         {
             Point p = points[di->second];
-            points.push_back({ p.x, p.y, di->second });
+            p.dupID = di->second;
+            points.push_back(p);
         }
         else
         {
-            Rect rect = packer.Insert(bitmap->width + 1, bitmap->height + 1, MaxRectsBinPack::RectBestShortSideFit);
+            Rect rect = packer.Insert(bitmap->width + 1, bitmap->height + 1, rotate, MaxRectsBinPack::RectBestShortSideFit);
             
             if (rect.width == 0 || rect.height == 0)
                 return;
             
-            if (reduce > 0)
+            //Check if we rotated it
+            Point p;
+            p.x = rect.x;
+            p.y = rect.y;
+            p.dupID = -1;
+            p.rot = rotate && bitmap->width != (rect.width - 1);
+            
+            if (unique > 0)
                 dupLookup[bitmap->hashValue] = static_cast<int>(points.size());
-            points.push_back({ rect.x, rect.y, -1 });
+            
+            points.push_back(p);
             
             ww = max(rect.x + rect.width, ww);
             hh = max(rect.y + rect.height, hh);
@@ -89,12 +98,19 @@ void Packer::SavePng(const string& file)
 {
     Bitmap bitmap(width, height);
     for (size_t i = 0, j = bitmaps.size(); i < j; ++i)
+    {
         if (points[i].dupID < 0)
-            bitmap.CopyPixels(bitmaps[i], points[i].x, points[i].y);
+        {
+            if (points[i].rot)
+                bitmap.CopyPixelsRot(bitmaps[i], points[i].x, points[i].y);
+            else
+                bitmap.CopyPixels(bitmaps[i], points[i].x, points[i].y);
+        }
+    }
     bitmap.SaveAs(file);
 }
 
-void Packer::SaveXml(const string& name, ofstream& xml, bool trim)
+void Packer::SaveXml(const string& name, ofstream& xml, bool trim, bool rotate)
 {
     xml << "\t<tex n=\"" << name << "\">" << endl;
     for (size_t i = 0, j = bitmaps.size(); i < j; ++i)
@@ -111,12 +127,14 @@ void Packer::SaveXml(const string& name, ofstream& xml, bool trim)
             xml << "fw=\"" << bitmaps[i]->frameW << "\" ";
             xml << "fh=\"" << bitmaps[i]->frameH << "\" ";
         }
+        if (rotate)
+            xml << "r=\"" << (points[i].rot ? 1 : 0) << "\" ";
         xml << "/>" << endl;
     }
     xml << "\t</tex>" << endl;
 }
 
-void Packer::SaveBin(const string& name, ofstream& bin, bool trim)
+void Packer::SaveBin(const string& name, ofstream& bin, bool trim, bool rotate)
 {
     WriteString(bin, name);
     WriteShort(bin, (int16_t)bitmaps.size());
@@ -134,5 +152,7 @@ void Packer::SaveBin(const string& name, ofstream& bin, bool trim)
             WriteShort(bin, (int16_t)bitmaps[i]->frameW);
             WriteShort(bin, (int16_t)bitmaps[i]->frameH);
         }
+        if (rotate)
+            WriteByte(bin, points[i].rot ? 1 : 0);
     }
 }

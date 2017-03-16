@@ -183,6 +183,14 @@ void Bitmap::CopyPixels(const Bitmap* src, int tx, int ty)
             data[(ty + y) * width + (tx + x)] = src->data[y * src->width + x];
 }
 
+void Bitmap::CopyPixelsRot(const Bitmap* src, int tx, int ty)
+{
+    int r = src->height - 1;
+    for (int y = 0; y < src->width; ++y)
+        for (int x = 0; x < src->height; ++x)
+            data[(ty + y) * width + (tx + x)] = src->data[(r - x) * src->width + y];
+}
+
 bool Bitmap::Equals(const Bitmap* other) const
 {
     if (width == other->width && height == other->height)

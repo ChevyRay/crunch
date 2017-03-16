@@ -34,6 +34,7 @@ using namespace std;
 
 void WriteString(ofstream& bin, const string& value);
 void WriteShort(ofstream& bin, int16_t value);
+void WriteByte(ofstream& bin, char value);
 string ReadString(ifstream& bin);
 int16_t ReadShort(ifstream& bin);
 

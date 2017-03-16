@@ -39,6 +39,7 @@ struct Point
     int x;
     int y;
     int dupID;
+    bool rot;
 };
 
 struct Packer
@@ -51,10 +52,10 @@ struct Packer
     unordered_map<size_t, int> dupLookup;
     
     Packer(int width, int height);
-    void Pack(vector<Bitmap*>& bitmaps, bool verbose, int reduce);
+    void Pack(vector<Bitmap*>& bitmaps, bool verbose, int reduce, bool rotate);
     void SavePng(const string& file);
-    void SaveXml(const string& name, ofstream& xml, bool trim);
-    void SaveBin(const string& name, ofstream& bin, bool trim);
+    void SaveXml(const string& name, ofstream& xml, bool trim, bool rotate);
+    void SaveBin(const string& name, ofstream& bin, bool trim, bool rotate);
 };
 
 #endif

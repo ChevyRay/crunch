@@ -37,6 +37,11 @@ void WriteShort(ofstream& bin, int16_t value)
     bin.write(reinterpret_cast<char*>(&value), 2);
 }
 
+void WriteByte(ofstream& bin, char value)
+{
+    bin.write(&value, 1);
+}
+
 string ReadString(ifstream& bin)
 {
     char data[256];
