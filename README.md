@@ -83,6 +83,12 @@ For example...
             [byte] img_rotated          (if --rotate enabled)
 ```
 
+### Building on Linux
+
+ ```
+ cd linux/
+ make
+ ```
 ### License
 
 Unless otherwise specified in a source file, everything in this project falls under the following license:
