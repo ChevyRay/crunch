@@ -34,7 +34,8 @@ void WriteString(ofstream& bin, const string& value)
 
 void WriteShort(ofstream& bin, int16_t value)
 {
-    bin.write(reinterpret_cast<char*>(&value), 2);
+    bin.put(static_cast<uint8_t>(value & 0xff));
+    bin.put(static_cast<uint8_t>((value >> 8) & 0xff));
 }
 
 void WriteByte(ofstream& bin, char value)
