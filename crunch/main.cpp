@@ -26,10 +26,10 @@
  ====================================
  
  usage:
-    crunch [INPUT_DIR] [OUTPUT_DIR] [OPTIONS...]
+    crunch [OUTPUT] [INPUT1,INPUT2,INPUT3] [OPTIONS...]
  
  example:
-    crunch assets/characters bin/atlases -p -t -v -u -r
+    crunch bin/atlases/atlas assets/characters,assets/tiles -p -t -v -u -r
  
  options:
     -d  --default           use default settings (-x -p -t -u)
@@ -64,6 +64,7 @@
 #include <iostream>
 #include <fstream>
 #include <streambuf>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -90,16 +91,48 @@ static bool optRotate;
 static vector<Bitmap*> bitmaps;
 static vector<Packer*> packers;
 
+static void SplitFileName(const string& path, string* dir, string* name, string* ext)
+{
+    size_t si = path.rfind('/') + 1;
+    if (si == string::npos)
+        si = 0;
+    size_t di = path.rfind('.');
+    if (dir != nullptr)
+    {
+        if (si > 0)
+            *dir = path.substr(0, si);
+        else
+            *dir = "";
+    }
+    if (name != nullptr)
+    {
+        if (di != string::npos)
+            *name = path.substr(si, di - si);
+        else
+            *name = path.substr(si);
+    }
+    if (ext != nullptr)
+    {
+        if (di != string::npos)
+            *ext = path.substr(di);
+        else
+            *ext = "";
+    }
+}
+
 static string GetFileName(const string& path)
 {
-    size_t s = path.rfind('/') + 1;
-    if (s == string::npos)
-        s = 0;
-    size_t d = path.rfind('.');
-    if (d == string::npos)
-        return path.substr(s);
-    else
-        return path.substr(s, d - s);
+    string name;
+    SplitFileName(path, nullptr, &name, nullptr);
+    return name;
+}
+
+static void LoadBitmap(const string& prefix, const string& path)
+{
+    if (optVerbose)
+        cout << '\t' << PathToStr(path) << endl;
+    
+    bitmaps.push_back(new Bitmap(PathToStr(path), prefix + GetFileName(PathToStr(path)), optPremultiply, optTrim));
 }
 
 static void LoadBitmaps(const string& root, const string& prefix)
@@ -121,12 +154,7 @@ static void LoadBitmaps(const string& root, const string& prefix)
                 LoadBitmaps(PathToStr(file.path), prefix + PathToStr(file.name) + "/");
         }
         else if (PathToStr(file.extension) == "png")
-        {
-            if (optVerbose)
-                cout << '\t' << PathToStr(file.path) << endl;
-            
-            bitmaps.push_back(new Bitmap(PathToStr(file.path), prefix + GetFileName(PathToStr(file.path)), optPremultiply, optTrim));
-        }
+            LoadBitmap(prefix, file.path);
         
         tinydir_next(&dir);
     }
@@ -179,12 +207,19 @@ int main(int argc, const char* argv[])
         return EXIT_FAILURE;
     }
     
-    //Get the input/output directories
-    string inputDir = argv[1];
-    string outputDir = argv[2];
-    string name = GetFileName(inputDir);
-    inputDir += '/';
-    outputDir += '/';
+    //Get the output directory and name
+    string outputDir, name;
+    SplitFileName(argv[1], &outputDir, &name, nullptr);
+    
+    //Get all the input files and directories
+    vector<string> inputs;
+    stringstream ss(argv[2]);
+    while (ss.good())
+    {
+        string inputStr;
+        getline(ss, inputStr, ',');
+        inputs.push_back(inputStr);
+    }
     
     //Get the options
     optSize = 4096;
@@ -235,9 +270,17 @@ int main(int argc, const char* argv[])
         }
     }
     
-    //Hash the input directory
+    //Hash the arguments and input directories
     size_t newHash = 0;
-    HashFiles(newHash, inputDir);
+    for (int i = 1; i < argc; ++i)
+        HashString(newHash, argv[i]);
+    for (size_t i = 0; i < inputs.size(); ++i)
+    {
+        if (inputs[i].rfind('.') == string::npos)
+            HashFiles(newHash, inputs[i]);
+        else
+            HashFile(newHash, inputs[i]);
+    }
     
     //Load the old hash
     size_t oldHash;
@@ -250,6 +293,35 @@ int main(int argc, const char* argv[])
         }
     }
     
+    /*-d  --default           use default settings (-x -p -t -u)
+    -x  --xml               saves the atlas data as a .xml file
+    -b  --binary            saves the atlas data as a .bin file
+    -j  --json              saves the atlas data as a .json file
+    -p  --premultiply       premultiplies the pixels of the bitmaps by their alpha channel
+    -t  --trim              trims excess transparency off the bitmaps
+    -v  --verbose           print to the debug console as the packer works
+    -f  --force             ignore the hash, forcing the packer to repack
+    -u  --unique            remove duplicate bitmaps from the atlas
+    -r  --rotate            enabled rotating bitmaps 90 degrees clockwise when packing
+    -s# --size#             max atlas size (# can be 4096, 2048, 1024, 512, or 256)
+    -p# --pad#              padding between images (# can be from 0 to 16)*/
+    
+    if (optVerbose)
+    {
+        cout << "options..." << endl;
+        cout << "\t--xml: " << (optXml ? "true" : "false") << endl;
+        cout << "\t--binary: " << (optBinary ? "true" : "false") << endl;
+        cout << "\t--json: " << (optJson ? "true" : "false") << endl;
+        cout << "\t--premultiply: " << (optPremultiply ? "true" : "false") << endl;
+        cout << "\t--trim: " << (optTrim ? "true" : "false") << endl;
+        cout << "\t--verbose: " << (optVerbose ? "true" : "false") << endl;
+        cout << "\t--force: " << (optForce ? "true" : "false") << endl;
+        cout << "\t--unique: " << (optUnique ? "true" : "false") << endl;
+        cout << "\t--rotate: " << (optRotate ? "true" : "false") << endl;
+        cout << "\t--size: " << optSize << endl;
+        cout << "\t--pad: " << optPadding << endl;
+    }
+    
     //Remove old files
     RemoveFile(outputDir + name + ".hash");
     RemoveFile(outputDir + name + ".bin");
@@ -258,10 +330,18 @@ int main(int argc, const char* argv[])
     for (size_t i = 0; i < 16; ++i)
         RemoveFile(outputDir + name + to_string(i) + ".png");
     
-    //Load the bitmaps and sort them by area
+    //Load the bitmaps from all the input files and directories
     if (optVerbose)
         cout << "loading images..." << endl;
-    LoadBitmaps(inputDir, "");
+    for (size_t i = 0; i < inputs.size(); ++i)
+    {
+        if (inputs[i].rfind('.') != string::npos)
+            LoadBitmap("", inputs[i]);
+        else
+            LoadBitmaps(inputs[i], "");
+    }
+    
+    //Sort the bitmaps by area
     sort(bitmaps.begin(), bitmaps.end(), [](const Bitmap* a, const Bitmap* b) {
         return (a->width * a->height) < (b->width * b->height);
     });
@@ -275,7 +355,7 @@ int main(int argc, const char* argv[])
         packer->Pack(bitmaps, optVerbose, optUnique, optRotate);
         packers.push_back(packer);
         if (optVerbose)
-            cout << "\tfinished packing: " << name << to_string(packers.size() - 1) << " (" << packer->width << " x " << packer->height << ')' << endl;
+            cout << "finished packing: " << name << to_string(packers.size() - 1) << " (" << packer->width << " x " << packer->height << ')' << endl;
     
         if (packer->bitmaps.empty())
         {
