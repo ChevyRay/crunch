@@ -26,7 +26,7 @@
  ====================================
  
  usage:
-    crunch [OUTPUT] [INPUT1,INPUT2,INPUT3] [OPTIONS...]
+    crunch [OUTPUT] [INPUT1,INPUT2,INPUT3...] [OPTIONS...]
  
  example:
     crunch bin/atlases/atlas assets/characters,assets/tiles -p -t -v -u -r
@@ -42,7 +42,7 @@
     -f  --force             ignore the hash, forcing the packer to repack
     -u  --unique            remove duplicate bitmaps from the atlas
     -r  --rotate            enabled rotating bitmaps 90 degrees clockwise when packing
-    -s# --size#             max atlas size (# can be 4096, 2048, 1024, 512, or 256)
+    -s# --size#             max atlas size (# can be 4096, 2048, 1024, 512, 256, 128, or 64)
     -p# --pad#              padding between images (# can be from 0 to 16)
  
  binary format:
@@ -179,6 +179,10 @@ static int GetPackSize(const string& str)
         return 512;
     if (str == "256")
         return 256;
+    if (str == "128")
+        return 128;
+    if (str == "64")
+        return 64;
     cerr << "invalid size: " << str << endl;
     exit(EXIT_FAILURE);
     return 0;
