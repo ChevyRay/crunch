@@ -42,11 +42,11 @@ There is also an option to use a binary format instead of xml.
 
 ### Usage
 
-`crunch [INPUT_DIR] [OUTPUT_DIR] [OPTIONS...]`
+`crunch [OUTPUT] [INPUT1,INPUT2,INPUT3...] [OPTIONS...]`
 
 For example...
 
-`crunch assets/characters bin/atlases -p -t -v -u -r`
+`crunch bin/atlases/atlas assets/characters,assets/tiles -p -t -v -u -r`
 
 ### Options
 
@@ -62,7 +62,7 @@ For example...
 | -f            | --force       | ignore caching, forcing the packer to repack
 | -u            | --unique      | remove duplicate bitmaps from the atlas
 | -r            | --rotate      | enabled rotating bitmaps 90 degrees clockwise when packing
-| -s#           | --size#       | max atlas size (# can be 4096, 2048, 1024, 512, or 256)
+| -s#           | --size#       | max atlas size (# can be 4096, 2048, 1024, 512, 256, 128, or 64)
 | -p#           | --pad#        | padding between images (# can be from 0 to 16)
 
 ### Binary Format
