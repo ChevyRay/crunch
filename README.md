@@ -46,7 +46,15 @@ There is also an option to use a binary format instead of xml.
 
 For example...
 
-`crunch bin/atlases/atlas assets/characters,assets/tiles -p -t -v -u -r`
+`crunch bin/atlases/atlas assets/characters,assets/tiles -p -t -v -u -r -j`
+
+This will output the following files:
+
+```
+bin/atlases/atlas.png
+bin/atlases/atlas.json
+bin/atlases/atlas.hash
+```
 
 ### Options
 
