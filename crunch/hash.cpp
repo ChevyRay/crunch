@@ -43,6 +43,11 @@ void HashCombine(std::size_t& hash, size_t v)
     hash ^= v + 0x9e3779b9 + (hash<<6) + (hash>>2);
 }
 
+void HashString(size_t& hash, const string& str)
+{
+    HashCombine(hash, str);
+}
+
 void HashFile(size_t& hash, const string& file)
 {
     ifstream stream(file, ios::binary | ios::ate);
