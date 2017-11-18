@@ -184,7 +184,10 @@ void Packer::SaveJson(const string& name, ofstream& json, bool trim, bool rotate
         }
         if (rotate)
             json << ", \"r\":" << (points[i].rot ? "true" : "false");
-        json << " }," << endl;
+        json << " }";
+        if(i != bitmaps.size() -1)
+            json << ",";
+        json << endl;
     }
     json << "\t\t\t]" << endl;
 }
