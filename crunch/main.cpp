@@ -82,7 +82,6 @@ static int optPadding;
 static bool optXml;
 static bool optBinary;
 static bool optJson;
-static bool optTexturePacker;
 static bool optPremultiply;
 static bool optTrim;
 static bool optVerbose;
@@ -232,7 +231,6 @@ int main(int argc, const char* argv[])
     optXml = false;
     optBinary = false;
     optJson = false;
-    optTexturePacker = false;
     optPremultiply = false;
     optTrim = false;
     optVerbose = false;
@@ -249,8 +247,6 @@ int main(int argc, const char* argv[])
             optBinary = true;
         else if (arg == "-j" || arg == "--json")
             optJson = true;
-        else if (arg == "--texturepacker")
-            optTexturePacker = true;
         else if (arg == "-p" || arg == "--premultiply")
             optPremultiply = true;
         else if (arg == "-t" || arg == "--trim")
@@ -320,7 +316,6 @@ int main(int argc, const char* argv[])
         cout << "\t--xml: " << (optXml ? "true" : "false") << endl;
         cout << "\t--binary: " << (optBinary ? "true" : "false") << endl;
         cout << "\t--json: " << (optJson ? "true" : "false") << endl;
-        cout << "\t--texturepacker" << (optTexturePacker ? "true" : "false") << endl;
         cout << "\t--premultiply: " << (optPremultiply ? "true" : "false") << endl;
         cout << "\t--trim: " << (optTrim ? "true" : "false") << endl;
         cout << "\t--verbose: " << (optVerbose ? "true" : "false") << endl;
@@ -427,19 +422,6 @@ int main(int argc, const char* argv[])
         }
         json << "\t]" << endl;
         json << '}';
-    }
-    
-    
-    //Save the TexturePacker-style atlas
-    if (optTexturePacker)
-    {
-        if (optVerbose)
-            cout << "writing texturepacker atlas: " << outputDir << name << ".atlas" << endl;
-        
-        for (size_t i = 0; i < packers.size(); ++i)
-        {
-            packers[i]->SaveTexturePacker(name + to_string(i), outputDir, optTrim, optRotate);
-        }
     }
     
     //Save the new hash
