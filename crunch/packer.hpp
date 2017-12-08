@@ -58,6 +58,7 @@ struct Packer
     void SaveXml(const string& name, ofstream& xml, bool trim, bool rotate);
     void SaveBin(const string& name, ofstream& bin, bool trim, bool rotate);
     void SaveJson(const string& name, ofstream& json, bool trim, bool rotate);
+    void SaveTexturePacker(const string& name, const string& atlas, bool trim, bool rotate);
 };
 
 #endif
