@@ -36,3 +36,4 @@ Release/*
 *.opendb
 *.db
 *.suo
+build/*

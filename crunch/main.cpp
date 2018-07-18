@@ -198,7 +198,7 @@ static int GetPadding(const string& str)
     return 1;
 }
 
-int main(int argc, const char* argv[])
+int crunch_main(int argc, const char* argv[])
 {
     //Print out passed arguments
     for (int i = 0; i < argc; ++i)
