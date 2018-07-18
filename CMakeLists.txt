@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.8.11)
-project (atlas)
+project (crunch)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include_directories(../Unpacker ${CMAKE_CURRENT_SOURCE_DIR})
@@ -16,7 +16,7 @@ crunch/main.cpp
 crunch/GuillotineBinPack.cpp
 )
 
-add_library(atlas ${SOURCES})
+add_library(crunch ${SOURCES})
 
-add_executable(atlas_gen main_real.cpp)
-target_link_libraries(atlas_gen atlas)
+add_executable(crunch_gen main_real.cpp)
+target_link_libraries(crunch_gen crunch)
