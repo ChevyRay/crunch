@@ -207,7 +207,7 @@ int main(int argc, const char* argv[])
     
     if (argc < 3)
     {
-        cerr << "invalid input, expected: \"crunch [INPUT DIRECTORY] [OUTPUT PREFIX] [OPTIONS...]\"" << endl;
+        cerr << "invalid input, expected: \"crunch [OUTPUT DIRECTORY] [INPUTS] [OPTIONS...]\"" << endl;
         return EXIT_FAILURE;
     }
     
