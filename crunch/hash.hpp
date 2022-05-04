@@ -28,16 +28,15 @@
 #define hash_hpp
 
 #include <string>
-using namespace std;
 
 template <class T>
-void HashCombine(std::size_t& hash, const T& v);
-void HashCombine(std::size_t& hash, size_t v);
-void HashString(size_t& hash, const string& str);
-void HashFile(size_t& hash, const string& file);
-void HashFiles(size_t& hash, const string& root);
+void HashCombine(size_t& hash, const T& v);
+void HashCombine(size_t& hash, size_t v);
+void HashString(size_t& hash, const std::string& str);
+void HashFile(size_t& hash, const std::string& file);
+void HashFiles(size_t& hash, const std::string& root);
 void HashData(size_t& hash, const char* data, size_t size);
-bool LoadHash(size_t& hash, const string& file);
-void SaveHash(size_t hash, const string& file);
+bool LoadHash(size_t& hash, const std::string& file);
+void SaveHash(size_t hash, const std::string& file);
 
 #endif

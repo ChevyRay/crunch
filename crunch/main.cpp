@@ -91,6 +91,42 @@ static bool optRotate;
 static vector<Bitmap*> bitmaps;
 static vector<Packer*> packers;
 
+static const char* helpMessage =
+    "usage:\n"
+    "   crunch [OUTPUT] [INPUT1,INPUT2,INPUT3...] [OPTIONS...]\n"
+    "\n"
+    "example:\n"
+    "   crunch bin/atlases/atlas assets/characters,assets/tiles -p -t -v -u -r\n"
+    "\n"
+    "options:\n"
+    "   -d  --default           use default settings (-x -p -t -u)\n"
+    "   -x  --xml               saves the atlas data as a .xml file\n"
+    "   -b  --binary            saves the atlas data as a .bin file\n"
+    "   -j  --json              saves the atlas data as a .json file\n"
+    "   -p  --premultiply       premultiplies the pixels of the bitmaps by their alpha channel\n"
+    "   -t  --trim              trims excess transparency off the bitmaps\n"
+    "   -v  --verbose           print to the debug console as the packer works\n"
+    "   -f  --force             ignore the hash, forcing the packer to repack\n"
+    "   -u  --unique            remove duplicate bitmaps from the atlas\n"
+    "   -r  --rotate            enabled rotating bitmaps 90 degrees clockwise when packing\n"
+    "   -s# --size#             max atlas size (# can be 4096, 2048, 1024, 512, 256, 128, or 64)\n"
+    "   -p# --pad#              padding between images (# can be from 0 to 16)\n"
+    "\n"
+    "binary format:\n"
+    "   [int16] num_textures (below block is repeated this many times)\n"
+    "       [string] name\n"
+    "       [int16] num_images (below block is repeated this many times)\n"
+    "           [string] img_name\n"
+    "           [int16] img_x\n"
+    "           [int16] img_y\n"
+    "           [int16] img_width\n"
+    "           [int16] img_height\n"
+    "           [int16] img_frame_x         (if --trim enabled)\n"
+    "           [int16] img_frame_y         (if --trim enabled)\n"
+    "           [int16] img_frame_width     (if --trim enabled)\n"
+    "           [int16] img_frame_height    (if --trim enabled)\n"
+    "           [byte] img_rotated          (if --rotate enabled)";
+
 static void SplitFileName(const string& path, string* dir, string* name, string* ext)
 {
     size_t si = path.rfind('/') + 1;
@@ -130,9 +166,9 @@ static string GetFileName(const string& path)
 static void LoadBitmap(const string& prefix, const string& path)
 {
     if (optVerbose)
-        cout << '\t' << PathToStr(path) << endl;
+        cout << '\t' << path << endl;
     
-    bitmaps.push_back(new Bitmap(PathToStr(path), prefix + GetFileName(PathToStr(path)), optPremultiply, optTrim));
+    bitmaps.push_back(new Bitmap(path, prefix + GetFileName(path), optPremultiply, optTrim));
 }
 
 static void LoadBitmaps(const string& root, const string& prefix)
@@ -141,12 +177,12 @@ static void LoadBitmaps(const string& root, const string& prefix)
     static string dot2 = "..";
     
     tinydir_dir dir;
-    tinydir_open(&dir, StrToPath(root).data());
+    tinydir_open_sorted(&dir, StrToPath(root).data());
     
-    while (dir.has_next)
+    for (int i = 0; i < static_cast<int>(dir.n_files); ++i)
     {
         tinydir_file file;
-        tinydir_readfile(&dir, &file);
+        tinydir_readfile_n(&dir, &file, i);
         
         if (file.is_dir)
         {
@@ -154,9 +190,7 @@ static void LoadBitmaps(const string& root, const string& prefix)
                 LoadBitmaps(PathToStr(file.path), prefix + PathToStr(file.name) + "/");
         }
         else if (PathToStr(file.extension) == "png")
-            LoadBitmap(prefix, file.path);
-        
-        tinydir_next(&dir);
+            LoadBitmap(prefix, PathToStr(file.path));
     }
     
     tinydir_close(&dir);
@@ -207,7 +241,15 @@ int main(int argc, const char* argv[])
     
     if (argc < 3)
     {
-        cerr << "invalid input, expected: \"crunch [INPUT DIRECTORY] [OUTPUT PREFIX] [OPTIONS...]\"" << endl;
+        if (argc == 2) {
+            string arg = argv[1];
+            if (arg == "-h") {
+                cout << helpMessage << endl;
+            }
+        }
+        else {
+            cerr << "invalid input, expected: \"crunch [OUTPUT] [INPUT1,INPUT2,INPUT3...] [OPTIONS...]\"" << endl;
+        }
         return EXIT_FAILURE;
     }
     
@@ -346,7 +388,7 @@ int main(int argc, const char* argv[])
     }
     
     //Sort the bitmaps by area
-    sort(bitmaps.begin(), bitmaps.end(), [](const Bitmap* a, const Bitmap* b) {
+    stable_sort(bitmaps.begin(), bitmaps.end(), [](const Bitmap* a, const Bitmap* b) {
         return (a->width * a->height) < (b->width * b->height);
     });
     

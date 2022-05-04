@@ -32,13 +32,27 @@
 #include "tinydir.h"
 #include "str.hpp"
 
-template <class T>
-void HashCombine(std::size_t& hash, const T& v)
+using namespace std;
+
+size_t GetHashBKDR(const string& str)
 {
-    std::hash<T> hasher;
-    hash ^= hasher(v) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+    size_t seed = 131;
+    size_t hash = 0;
+    int len = str.length();
+    for (int i = 0; i < len; ++i) {
+        hash = hash * seed + str[i];
+    }
+    return hash & 0x7fffffff;
 }
-void HashCombine(std::size_t& hash, size_t v)
+
+void HashCombine(size_t& hash, const string& s)
+{
+    // std::hash<T> hasher;
+    // hash ^= hasher(v) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+    // std::hash can differ on different platforms
+    hash ^= GetHashBKDR(s) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+}
+void HashCombine(size_t& hash, size_t v)
 {
     hash ^= v + 0x9e3779b9 + (hash<<6) + (hash>>2);
 }
@@ -70,12 +84,12 @@ void HashFiles(size_t& hash, const string& root)
     static string dot2 = "..";
     
     tinydir_dir dir;
-    tinydir_open(&dir, StrToPath(root).data());
+    tinydir_open_sorted(&dir, StrToPath(root).data());
     
-    while (dir.has_next)
+    for (int i = 0; i < static_cast<int>(dir.n_files); ++i)
     {
         tinydir_file file;
-        tinydir_readfile(&dir, &file);
+        tinydir_readfile_n(&dir, &file, i);
         
         if (file.is_dir)
         {
@@ -84,8 +98,6 @@ void HashFiles(size_t& hash, const string& root)
         }
         else if (PathToStr(file.extension) == "png")
             HashFile(hash, PathToStr(file.path));
-        
-        tinydir_next(&dir);
     }
     
     tinydir_close(&dir);
