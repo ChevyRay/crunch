@@ -45,6 +45,7 @@
     -s#   --size#             max atlas size (# can be 4096, 2048, 1024, 512, 256, 128, or 64)
     -p#   --pad#              padding between images (# can be from 0 to 16)
     -bs%  --binstr%           string type in binary format (% can be: n - null-termainated, p - prefixed (int16), 7 - 7-bit prefixed)
+    -tm   --time              use file's last write time instead of its content for hashing
     
     binary format:
     crch (0x68637263 in hex or 1751347811 in decimal)
@@ -98,6 +99,7 @@ static bool optVerbose;
 static bool optForce;
 static bool optUnique;
 static bool optRotate;
+static bool optTime;
 static vector<Bitmap *> bitmaps;
 static vector<Packer *> packers;
 
@@ -122,6 +124,7 @@ static const char *helpMessage =
     "   -s#   --size#             max atlas size (# can be 4096, 2048, 1024, 512, 256, 128, or 64)\n"
     "   -p#   --pad#              padding between images (# can be from 0 to 16)\n"
     "   -bs%  --binstr%           string type in binary format (% can be: n - null-termainated, p - prefixed (int16), 7 - 7-bit prefixed)\n"
+    "   -tm   --time              use file's last write time instead of its content for hashing\n"
     "\n"
     "binary format:\n"
     "crch (0x68637263 in hex or 1751347811 in decimal)\n"
@@ -335,6 +338,8 @@ int main(int argc, const char *argv[])
             optUnique = true;
         else if (arg == "-r" || arg == "--rotate")
             optRotate = true;
+        else if (arg == "-tm" || arg == "--time")
+            optTime = true;
         else if (arg.find("-bs") == 0)
             optBinstr = GetBinStrType(arg.substr(3));
         else if (arg.find("--binstr") == 0)
@@ -361,9 +366,9 @@ int main(int argc, const char *argv[])
     for (size_t i = 0; i < inputs.size(); ++i)
     {
         if (inputs[i].rfind('.') == string::npos)
-            HashFiles(newHash, inputs[i]);
+            HashFiles(newHash, inputs[i], optTime);
         else
-            HashFile(newHash, inputs[i]);
+            HashFile(newHash, inputs[i], optTime);
     }
     StopTimer("hashing input");
 

@@ -29,12 +29,10 @@
 
 #include <string>
 
-template <class T>
-void HashCombine(size_t& hash, const T& v);
 void HashCombine(size_t& hash, size_t v);
 void HashString(size_t& hash, const std::string& str);
-void HashFile(size_t& hash, const std::string& file);
-void HashFiles(size_t& hash, const std::string& root);
+void HashFile(size_t& hash, const std::string& file, bool checkTime);
+void HashFiles(size_t& hash, const std::string& root, bool checkTime);
 void HashData(size_t& hash, const char* data, size_t size);
 bool LoadHash(size_t& hash, const std::string& file);
 void SaveHash(size_t hash, const std::string& file);

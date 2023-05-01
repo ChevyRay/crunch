@@ -73,6 +73,7 @@ bin/atlases/atlas.hash
 | -s#           | --size#       | max atlas size (# can be 4096, 2048, 1024, 512, 256, 128, or 64) |
 | -p#           | --pad#        | padding between images (# can be from 0 to 16) |
 | -bs%          | --binstr%     | string type in binary format (% can be: n - null-termainated, p - prefixed (int16), 7 - 7-bit prefixed) |
+| -tm           | --time        | use file's last write time instead of its content for hashing |
 
 ## Binary Format
 

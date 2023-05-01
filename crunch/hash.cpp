@@ -28,6 +28,8 @@
 #include <fstream>
 #include <vector>
 #include <iostream>
+#include <filesystem>
+#include <chrono>
 #include <sstream>
 #include "tinydir.h"
 #include "str.hpp"
@@ -62,8 +64,15 @@ void HashString(size_t& hash, const string& str)
     HashCombine(hash, str);
 }
 
-void HashFile(size_t& hash, const string& file)
+void HashFile(size_t& hash, const string& file, bool checkTime)
 {
+    if (checkTime)
+    {
+        auto time = std::filesystem::last_write_time(file);
+        HashCombine(hash, std::chrono::duration_cast<std::chrono::seconds>(time.time_since_epoch()).count());
+        return;
+    }
+
     ifstream stream(file, ios::binary | ios::ate);
     streamsize size = stream.tellg();
     stream.seekg(0, ios::beg);
@@ -78,7 +87,7 @@ void HashFile(size_t& hash, const string& file)
     HashCombine(hash, text);
 }
 
-void HashFiles(size_t& hash, const string& root)
+void HashFiles(size_t& hash, const string& root, bool checkTime)
 {
     static string dot1 = ".";
     static string dot2 = "..";
@@ -94,10 +103,10 @@ void HashFiles(size_t& hash, const string& root)
         if (file.is_dir)
         {
             if (dot1 != PathToStr(file.name) && dot2 != PathToStr(file.name))
-                HashFiles(hash, PathToStr(file.path));
+                HashFiles(hash, PathToStr(file.path), checkTime);
         }
         else if (PathToStr(file.extension) == "png")
-            HashFile(hash, PathToStr(file.path));
+            HashFile(hash, PathToStr(file.path), checkTime);
     }
     
     tinydir_close(&dir);
