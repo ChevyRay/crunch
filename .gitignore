@@ -33,6 +33,10 @@
 *.log
 Debug/*
 Release/*
+x64/*
 *.opendb
 *.db
 *.suo
+
+# Other
+.vs/*

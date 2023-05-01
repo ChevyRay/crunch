@@ -45,6 +45,9 @@
     <ClInclude Include="crunch\str.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="crunch\time.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="crunch\binary.cpp">
@@ -75,6 +78,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="crunch\str.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="crunch\time.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

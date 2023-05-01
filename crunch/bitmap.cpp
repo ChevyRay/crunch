@@ -30,6 +30,7 @@
 #include "lodepng.h"
 #include <algorithm>
 #include "hash.hpp"
+#include "time.hpp"
 
 using namespace std;
 
@@ -39,14 +40,18 @@ Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool tr
     //Load the png file
     unsigned char* pdata;
     unsigned int pw, ph;
+    StartTimer("loading png");
     if (lodepng_decode32_file(&pdata, &pw, &ph, file.data()))
     {
         cerr << "failed to load png: " << file << endl;
         exit(EXIT_FAILURE);
     }
+    StopTimer("loading png");
     int w = static_cast<int>(pw);
     int h = static_cast<int>(ph);
     uint32_t* pixels = reinterpret_cast<uint32_t*>(pdata);
+
+    StartTimer("premultiplying bitmap");
     
     //Premultiply all the pixels by their alpha
     if (premultiply)
@@ -56,18 +61,20 @@ Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool tr
         float m;
         for (int i = 0; i < count; ++i)
         {
-			c = pixels[i];
-			a = c >> 24;
-			m = static_cast<float>(a) / 255.0f;
-			r = static_cast<uint32_t>((c & 0xff) * m);
-			g = static_cast<uint32_t>(((c >> 8) & 0xff) * m);
-			b = static_cast<uint32_t>(((c >> 16) & 0xff) * m);
-			pixels[i] = (a << 24) | (b << 16) | (g << 8) | r;
+            c = pixels[i];
+            a = c >> 24;
+            m = static_cast<float>(a) / 255.0f;
+            r = static_cast<uint32_t>((c & 0xff) * m);
+            g = static_cast<uint32_t>(((c >> 8) & 0xff) * m);
+            b = static_cast<uint32_t>(((c >> 16) & 0xff) * m);
+            pixels[i] = (a << 24) | (b << 16) | (g << 8) | r;
         }
     }
+    StopTimer("premultiplying bitmap");
     
     //TODO: skip if all corners contain opaque pixels?
     
+    StartTimer("trimming bitmap");
     //Get pixel bounds
     int minX = w - 1;
     int minY = h - 1;
@@ -106,7 +113,9 @@ Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool tr
         maxX = w - 1;
         maxY = h - 1;
     }
+    StopTimer("trimming bitmap");
     
+    StartTimer("copying bitmap");
     //Calculate our trimmed size
     width = (maxX - minX) + 1;
     height = (maxY - minY) + 1;
@@ -135,12 +144,16 @@ Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool tr
         //Free the untrimmed pixels
         free(pixels);
     }
+    StopTimer("copying bitmap");
+
     
+    StartTimer("hashing bitmap");
     //Generate a hash for the bitmap
     hashValue = 0;
     HashCombine(hashValue, static_cast<size_t>(width));
     HashCombine(hashValue, static_cast<size_t>(height));
     HashData(hashValue, reinterpret_cast<char*>(data), sizeof(uint32_t) * width * height);
+    StopTimer("hashing bitmap");
 }
 
 Bitmap::Bitmap(int width, int height)
@@ -156,6 +169,7 @@ Bitmap::~Bitmap()
 
 void Bitmap::SaveAs(const string& file)
 {
+    StartTimer("saving bitmap");
     unsigned char* pdata = reinterpret_cast<unsigned char*>(data);
     unsigned int pw = static_cast<unsigned int>(width);
     unsigned int ph = static_cast<unsigned int>(height);
@@ -164,21 +178,26 @@ void Bitmap::SaveAs(const string& file)
         cout << "failed to save png: " << file << endl;
         exit(EXIT_FAILURE);
     }
+    StopTimer("saving bitmap");
 }
 
 void Bitmap::CopyPixels(const Bitmap* src, int tx, int ty)
 {
+    StartTimer("copying bitmap");
     for (int y = 0; y < src->height; ++y)
         for (int x = 0; x < src->width; ++x)
             data[(ty + y) * width + (tx + x)] = src->data[y * src->width + x];
+    StopTimer("copying bitmap");
 }
 
 void Bitmap::CopyPixelsRot(const Bitmap* src, int tx, int ty)
 {
+    StartTimer("copying rotated bitmap");
     int r = src->height - 1;
     for (int y = 0; y < src->width; ++y)
         for (int x = 0; x < src->height; ++x)
             data[(ty + y) * width + (tx + x)] = src->data[(r - x) * src->width + y];
+    StopTimer("copying rotated bitmap");
 }
 
 bool Bitmap::Equals(const Bitmap* other) const
