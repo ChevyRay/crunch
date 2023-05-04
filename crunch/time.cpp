@@ -27,7 +27,7 @@ void StopTimer(const string& func)
 #endif
 }
 
-void WriteAll()
+void WriteAllTimers()
 {
 #ifdef MEASURE_TIME
     if(funcs["total"] == 0) StopTimer("total");

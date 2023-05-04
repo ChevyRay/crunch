@@ -58,22 +58,23 @@ bin/atlases/atlas.hash
 
 ## Options
 
-| option        | alias         | description |
-| ------------- | ------------- | ------------|
-| -d            | --default     | use default settings (-x -p -t -u) |
-| -x            | --xml         | saves the atlas data as a .xml file |
-| -b            | --binary      | saves the atlas data as a .bin file |
-| -j            | --json        | saves the atlas data as a .json file |
-| -p            | --premultiply | premultiplies the pixels of the bitmaps by their alpha channel |
-| -t            | --trim        | trims excess transparency off the bitmaps |
-| -v            | --verbose     | print to the debug console as the packer works |
-| -f            | --force       | ignore caching, forcing the packer to repack |
-| -u            | --unique      | remove duplicate bitmaps from the atlas |
-| -r            | --rotate      | enabled rotating bitmaps 90 degrees clockwise when packing |
-| -s#           | --size#       | max atlas size (# can be 4096, 2048, 1024, 512, 256, 128, or 64) |
-| -p#           | --pad#        | padding between images (# can be from 0 to 16) |
-| -bs%          | --binstr%     | string type in binary format (% can be: n - null-termainated, p - prefixed (int16), 7 - 7-bit prefixed) |
-| -tm           | --time        | use file's last write time instead of its content for hashing |
+| option          | alias           | description     |
+| --------------- | --------------- | --------------- |
+| `-d`            | `--default`     | use default settings (`-x -p -t -u`) |
+| `-x`            | `--xml`         | saves the atlas data as a `.xml` file |
+| `-b`            | `--binary`      | saves the atlas data as a `.bin` file |
+| `-j`            | `--json`        | saves the atlas data as a `.json` file |
+| `-p`            | `--premultiply` | premultiplies the pixels of the bitmaps by their alpha channel |
+| `-t`            | `--trim`        | trims excess transparency off the bitmaps |
+| `-v`            | `--verbose`     | print to the debug console as the packer works |
+| `-f`            | `--force`       | ignore caching, forcing the packer to repack |
+| `-u`            | `--unique`      | remove duplicate bitmaps from the atlas |
+| `-r`            | `--rotate`      | enabled rotating bitmaps 90 degrees clockwise when packing |
+| `-s#`           | `--size#`       | max atlas size (`#` can be `4096`, `2048`, `1024`, `512`, `256`, `128`, or `64`) |
+| `-p#`           | `--pad#`        | padding between images (`#` can be from `0` to `16`) |
+| `-bs%`          | `--binstr%`     | string type in binary format (`%` can be: `n` - null-termainated, `p` - prefixed (int16), `7` - 7-bit prefixed) |
+| `-tm`           | `--time`        | use file's last write time instead of its content for hashing |
+| `-sp`           | `--split`       | split output textures by subdirectories |
 
 ## Binary Format
 
@@ -97,6 +98,48 @@ crch (0x68637263 in hex or 1751347811 in decimal)
         [int16] img_frame_height    (if --trim enabled)
         [byte] img_rotated          (if --rotate enabled)
 ```
+
+## Splitting
+
+If `--split` (or `-sp`) is enabled output textures will be split by subdirectories.
+
+For example:
+
+`crunch bin/images images -b -sp` with input images
+
+```text
+images/
+    chars/
+        player.png
+        enemy.png
+    other/
+        tree.png
+        box.png
+```
+
+will output
+
+```text
+bin/
+    images_chars.png (with player.png and enemy.png)
+    images_chars.hash
+    images_chars.bin
+    images_other.png (with tree.png and box.png)
+    images_other.hash
+    images_other.bin
+    images.bin
+```
+
+If `player.png` is the only changed image then only `images_chars.bin` will be packed
+and `images_other.bin`  will be reused in `images.bin`.
+
+This can be used for faster packing: unchanged inputs or subdirectories will be skipped
+instead of packing unchanged images.
+
+But there're some limitations:
+
+- multiple inputs and images as inputs are not supported
+- images in input directory itself will be ignored and not packed
 
 ## License
 

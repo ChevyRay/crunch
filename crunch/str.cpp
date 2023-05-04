@@ -27,6 +27,7 @@
 #include "str.hpp"
 
 #if defined _MSC_VER || defined __MINGW32__
+#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING	
 #include <locale>
 #include <codecvt>
 wstring StrToPath(const string& str)
