@@ -34,6 +34,7 @@
 Debug/*
 Release/*
 x64/*
+linux/crunch
 *.opendb
 *.db
 *.suo

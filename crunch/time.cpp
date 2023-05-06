@@ -4,6 +4,7 @@
 #include <iostream>
 
 // Uncomment line below if needed
+// Note: measuring time is incompatible with g++
 // #define MEASURE_TIME 
 
 using namespace std;

@@ -142,6 +142,15 @@ But there're some limitations:
 - multiple inputs and images as inputs are not supported
 - images in input directory itself will be ignored and not packed
 
+### Building on Linux
+
+```text
+cd linux/
+make
+```
+
+> Note: measuring time is incompatible with g++
+
 ## License
 
 Unless otherwise specified in a source file, everything in this project falls under the following license:
