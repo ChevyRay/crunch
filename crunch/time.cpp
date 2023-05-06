@@ -33,8 +33,13 @@ void WriteAllTimers()
     if(funcs["total"] == 0) StopTimer("total");
     cout << "Time measured:" << endl;
     for (auto &kv : funcs) 
-    {
-        cout << "\t" << kv.first << ": " << kv.second / 1000000.0 << " ms" << endl;
-    }
+        if(kv.first != "total" && !kv.first.ends_with('/'))
+            cout << "\t" << kv.first << ": " << kv.second / 1000000.0 << " ms" << endl;
+    
+    for (auto &kv : funcs) 
+        if(kv.first != "total" && kv.first.ends_with('/'))
+            cout << "\tsubdir " << kv.first.substr(0, kv.first.length() - 1) << ": " << kv.second / 1000000.0 << " ms" << endl;
+    
+    cout << "\ttotal: " << funcs["total"] / 1000000.0 << " ms" << endl;
 #endif
 }

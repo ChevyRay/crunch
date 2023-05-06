@@ -73,8 +73,9 @@ bin/atlases/atlas.hash
 | `-s#`           | `--size#`       | max atlas size (`#` can be `4096`, `2048`, `1024`, `512`, `256`, `128`, or `64`) |
 | `-p#`           | `--pad#`        | padding between images (`#` can be from `0` to `16`) |
 | `-bs%`          | `--binstr%`     | string type in binary format (`%` can be: `n` - null-termainated, `p` - prefixed (int16), `7` - 7-bit prefixed) |
-| `-tm`           | `--time`        | use file's last write time instead of its content for hashing |
+| `-tm`           | `--time`        | use file's last write time instead of its contents for hashing |
 | `-sp`           | `--split`       | split output textures by subdirectories |
+| `-nz`           | `--nozero`      | if there's only one packed texture, then zero at the end of its name will be omitted (ex. `images0.png` -> `images.png`) |
 
 ## Binary Format
 
@@ -133,7 +134,7 @@ bin/
 If `player.png` is the only changed image then only `images_chars.bin` will be packed
 and `images_other.bin`  will be reused in `images.bin`.
 
-This can be used for faster packing: unchanged inputs or subdirectories will be skipped
+This can be used for faster packing: unchanged subdirectories will be skipped
 instead of packing unchanged images.
 
 But there're some limitations:

@@ -47,6 +47,7 @@
     -bs%  --binstr%           string type in binary format (% can be: n - null-termainated, p - prefixed (int16), 7 - 7-bit prefixed)
     -tm   --time              use file's last write time instead of its content for hashing
     -sp   --split             split output textures by subdirectories
+    -nz   --nozero            if there's ony one packed texture, then zero at the end of its name will be omitted (ex. images0.png -> images.png
     
     binary format:
     crch (0x68637263 in hex or 1751347811 in decimal)
@@ -87,7 +88,8 @@
 
 using namespace std;
 
-const int version = 0;
+const char *version = "v0.1";
+const int binVersion = 0;
 
 static int optSize;
 static int optPadding;
@@ -103,6 +105,7 @@ static bool optUnique;
 static bool optRotate;
 static bool optTime;
 static bool optSplit;
+static bool optNoZero;
 static vector<Bitmap *> bitmaps;
 static vector<Packer *> packers;
 
@@ -129,6 +132,7 @@ static const char *helpMessage =
     "   -bs%  --binstr%           string type in binary format (% can be: n - null-termainated, p - prefixed (int16), 7 - 7-bit prefixed)\n"
     "   -tm   --time              use file's last write time instead of its content for hashing\n"
     "   -sp   --split             split output textures by subdirectories\n"
+    "   -nz   --nozero            if there's ony one packed texture, then zero at the end of its name will be omitted (ex. images0.png -> images.png)\n"
     "\n"
     "binary format:\n"
     "crch (0x68637263 in hex or 1751347811 in decimal)\n"
@@ -268,7 +272,7 @@ static int GetPadding(const string &str)
     return 1;
 }
 
-static void GetSubdirs(const string& root, vector<string>& subdirs)
+static void GetSubdirs(const string &root, vector<string> &subdirs)
 {
     static string dot1 = ".";
     static string dot2 = "..";
@@ -291,7 +295,7 @@ static void GetSubdirs(const string& root, vector<string>& subdirs)
     tinydir_close(&dir);
 }
 
-static void FindPackers(const string& root, const string& name, const string& ext, vector<string>& packers)
+static void FindPackers(const string &root, const string &name, const string &ext, vector<string> &packers)
 {
     static string dot1 = ".";
     static string dot2 = "..";
@@ -311,8 +315,9 @@ static void FindPackers(const string& root, const string& name, const string& ex
     tinydir_close(&dir);
 }
 
-static int Pack(size_t newHash, string& outputDir, string& name, vector<string>& inputs, bool split = false, string prefix = "")
+static int Pack(size_t newHash, string &outputDir, string &name, vector<string> &inputs, bool split = false, string prefix = "")
 {
+    if (split) StartTimer(prefix);
     StartTimer("hashing input");
     for (size_t i = 0; i < inputs.size(); ++i)
     {
@@ -334,6 +339,7 @@ static int Pack(size_t newHash, string& outputDir, string& name, vector<string>&
                 WriteAllTimers();
                 return EXIT_SUCCESS;
             }
+            StopTimer(prefix);
             return EXIT_SKIPPED;
         }
     }
@@ -343,6 +349,7 @@ static int Pack(size_t newHash, string& outputDir, string& name, vector<string>&
     RemoveFile(outputDir + name + ".bin");
     RemoveFile(outputDir + name + ".xml");
     RemoveFile(outputDir + name + ".json");
+    RemoveFile(outputDir + name + ".png");
     for (size_t i = 0; i < 16; ++i)
         RemoveFile(outputDir + name + to_string(i) + ".png");
 
@@ -376,7 +383,7 @@ static int Pack(size_t newHash, string& outputDir, string& name, vector<string>&
         packer->Pack(bitmaps, optVerbose, optUnique, optRotate);
         packers.push_back(packer);
         if (optVerbose)
-            cout << "finished packing: " << name << to_string(packers.size() - 1) << " (" << packer->width << " x " << packer->height << ')' << endl;
+            cout << "finished packing: " << name << (optNoZero && bitmaps.empty() ? "" : to_string(packers.size() - 1)) << " (" << packer->width << " x " << packer->height << ')' << endl;
 
         if (packer->bitmaps.empty())
         {
@@ -386,14 +393,16 @@ static int Pack(size_t newHash, string& outputDir, string& name, vector<string>&
     }
     StopTimer("packing bitmaps");
 
-    StartTimer("saving atlas png");
+    bool noZero = optNoZero && packers.size() == 1;
 
+    StartTimer("saving atlas png");
     // Save the atlas image
     for (size_t i = 0; i < packers.size(); ++i)
     {
+        string pngName = outputDir + name + (noZero ? "" : to_string(i)) + ".png";
         if (optVerbose)
-            cout << "writing png: " << outputDir << name << to_string(i) << ".png" << endl;
-        packers[i]->SavePng(outputDir + name + to_string(i) + ".png");
+            cout << "writing png: " << pngName << endl;
+        packers[i]->SavePng(pngName);
     }
     StopTimer("saving atlas png");
 
@@ -413,14 +422,14 @@ static int Pack(size_t newHash, string& outputDir, string& name, vector<string>&
             WriteByte(bin, 'r');
             WriteByte(bin, 'c');
             WriteByte(bin, 'h');
-            WriteShort(bin, version);
+            WriteShort(bin, binVersion);
             WriteByte(bin, optTrim);
             WriteByte(bin, optRotate);
             WriteByte(bin, optBinstr);
         }
         WriteShort(bin, (int16_t)packers.size());
         for (size_t i = 0; i < packers.size(); ++i)
-            packers[i]->SaveBin(name + to_string(i), bin, optTrim, optRotate);
+            packers[i]->SaveBin(name + (noZero ? "" : to_string(i)), bin, optTrim, optRotate);
         bin.close();
     }
 
@@ -438,7 +447,7 @@ static int Pack(size_t newHash, string& outputDir, string& name, vector<string>&
             xml << "\t<rotate>" << (optRotate ? "true" : "false") << "</trim>" << endl;
         }
         for (size_t i = 0; i < packers.size(); ++i)
-            packers[i]->SaveXml(name + to_string(i), xml, optTrim, optRotate);
+            packers[i]->SaveXml(name + (noZero ? "" : to_string(i)), xml, optTrim, optRotate);
         if (!split) xml << "</atlas>";
         xml.close();
     }
@@ -460,7 +469,7 @@ static int Pack(size_t newHash, string& outputDir, string& name, vector<string>&
         for (size_t i = 0; i < packers.size(); ++i)
         {
             json << "\t\t{" << endl;
-            packers[i]->SaveJson(name + to_string(i), json, optTrim, optRotate);
+            packers[i]->SaveJson(name + (noZero ? "" : to_string(i)), json, optTrim, optRotate);
             json << "\t\t}";
             if (!split)
             {
@@ -480,12 +489,14 @@ static int Pack(size_t newHash, string& outputDir, string& name, vector<string>&
 
     // Save the new hash
     SaveHash(newHash, outputDir + name + ".hash");
+
+    if (split) StopTimer(prefix);
+
     return EXIT_SUCCESS;
 }
 
 int main(int argc, const char *argv[])
 {
-    StartTimer("total");
     // Print out passed arguments
     for (int i = 0; i < argc; ++i)
         cout << argv[i] << ' ';
@@ -496,17 +507,24 @@ int main(int argc, const char *argv[])
         if (argc == 2)
         {
             string arg = argv[1];
-            if (arg == "-h")
+            if (arg == "-h" || arg == "-?" || arg == "--help")
             {
                 cout << helpMessage << endl;
+                return EXIT_SUCCESS;
+            }
+            else if (arg == "--version")
+            {
+                cout << "crunch " << version << endl;
+                return EXIT_SUCCESS;
             }
         }
-        else
-        {
-            cerr << "invalid input, expected: \"crunch [OUTPUT] [INPUT1,INPUT2,INPUT3...] [OPTIONS...]\"" << endl;
-        }
+        
+        cerr << "invalid input, expected: \"crunch [OUTPUT] [INPUT1,INPUT2,INPUT3...] [OPTIONS...]\"" << endl;
+        
         return EXIT_FAILURE;
     }
+
+    StartTimer("total");
 
     // Get the output directory and name
     string outputDir, name;
@@ -536,6 +554,7 @@ int main(int argc, const char *argv[])
     optUnique = false;
     optTime = false;
     optSplit = false;
+    optNoZero = false;
     for (int i = 3; i < argc; ++i)
     {
         string arg = argv[i];
@@ -563,6 +582,8 @@ int main(int argc, const char *argv[])
             optTime = true;
         else if (arg == "-sp" || arg == "--split")
             optSplit = true;
+        else if (arg == "-nz" || arg == "--nozero")
+            optNoZero = true;
         else if (arg.find("-bs") == 0)
             optBinstr = GetBinStrType(arg.substr(3));
         else if (arg.find("--binstr") == 0)
@@ -598,6 +619,7 @@ int main(int argc, const char *argv[])
     -bs%  --binstr%         string type in binary format (% can be: n - null-termainated, p - prefixed (int16), 7 - 7-bit prefixed)
     -tm   --time            use file's last write time instead of its content for hashing
     -sp   --split           split output textures by subdirectories
+    -nz   --nozero          if there's ony one packed texture, then zero at the end of its name will be omitted (ex. images0.png -> images.png)
     */
 
     if (optVerbose)
@@ -617,6 +639,7 @@ int main(int argc, const char *argv[])
         cout << "\t--binstr: " << (optBinstr == 0 ? "n" : (optBinstr == 1 ? "p" : "7")) << endl;
         cout << "\t--time: " << (optTime ? "true" : "false") << endl;
         cout << "\t--split: " << (optSplit ? "true" : "false") << endl;
+        cout << "\t--nozero: " << (optNoZero ? "true" : "false") << endl;
     }
 
     StartTimer("hashing input");
@@ -695,6 +718,8 @@ int main(int argc, const char *argv[])
         if (optVerbose)
             cout << "writing bin: " << outputDir << name << ".bin" << endl;
 
+        vector<ifstream*> cacheFiles;
+
         FindPackers(outputDir, namePrefix, "bin", cachedPackers);
 
         ofstream bin(outputDir + name + ".bin", ios::binary);
@@ -702,7 +727,7 @@ int main(int argc, const char *argv[])
         WriteByte(bin, 'r');
         WriteByte(bin, 'c');
         WriteByte(bin, 'h');
-        WriteShort(bin, version);
+        WriteShort(bin, binVersion);
         WriteByte(bin, optTrim);
         WriteByte(bin, optRotate);
         WriteByte(bin, optBinstr);
@@ -711,19 +736,19 @@ int main(int argc, const char *argv[])
         {
             ifstream binCache(cachedPackers[i], ios::binary);
             imageCount += ReadShort(binCache);
-            binCache.close();
+            cacheFiles.push_back(&binCache);
         }
         WriteShort(bin, imageCount);
-        for (size_t i = 0; i < cachedPackers.size(); ++i)
+        for (size_t i = 0; i < cacheFiles.size(); ++i)
         {
-            ifstream binCache(cachedPackers[i], ios::binary);
-            ReadShort(binCache);
-            bin << binCache.rdbuf();
-            binCache.close();
+            auto binCache = cacheFiles[i];
+            ReadShort(*binCache);
+            bin << binCache->rdbuf();
+            binCache->close();
         }
         bin.close();
     }
-
+     
     if (optXml)
     {
         if (optVerbose)
