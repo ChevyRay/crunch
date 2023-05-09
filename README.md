@@ -149,8 +149,6 @@ cd linux/
 make
 ```
 
-> Note: measuring time is incompatible with g++
-
 ## License
 
 Unless otherwise specified in a source file, everything in this project falls under the following license:
