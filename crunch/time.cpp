@@ -4,18 +4,18 @@
 #include <iostream>
 
 // Uncomment line below if needed
-// Note: measuring time is incompatible with g++
 // #define MEASURE_TIME 
 
 using namespace std;
 
 static unordered_map<std::string, long long> funcs;
-static unordered_map<std::string, chrono::steady_clock::time_point> starts;
+static unordered_map<std::string, long long> starts;
 
 void StartTimer(const string& func)
 {
 #ifdef MEASURE_TIME
-    starts[func] = chrono::high_resolution_clock::now();
+    auto now = chrono::high_resolution_clock::now();
+    starts[func] = chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch()).count();
 #endif
 }
 
@@ -23,8 +23,8 @@ void StopTimer(const string& func)
 {
 #ifdef MEASURE_TIME
     auto now = chrono::high_resolution_clock::now();
-    auto time = now - starts[func];
-    funcs[func] += time.count();
+    auto timeNow = chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch()).count();
+    funcs[func] += timeNow - starts[func];
 #endif
 }
 
