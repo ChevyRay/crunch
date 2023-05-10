@@ -142,7 +142,7 @@ But there're some limitations:
 - multiple inputs and images as inputs are not supported
 - images in input directory itself will be ignored and not packed
 
-### Building on Linux
+## Building on Linux
 
 ```text
 cd linux/

@@ -315,9 +315,9 @@ static void FindPackers(const string &root, const string &name, const string &ex
     tinydir_close(&dir);
 }
 
-static int Pack(size_t newHash, string &outputDir, string &name, vector<string> &inputs, bool split = false, string prefix = "")
+static int Pack(size_t newHash, string &outputDir, string &name, vector<string> &inputs, string prefix = "")
 {
-    if (split) StartTimer(prefix);
+    if (optSplit) StartTimer(prefix);
     StartTimer("hashing input");
     for (size_t i = 0; i < inputs.size(); ++i)
     {
@@ -333,10 +333,10 @@ static int Pack(size_t newHash, string &outputDir, string &name, vector<string> 
     {
         if (!optForce && newHash == oldHash)
         {
-            if (!split)
+            if (!optSplit)
             {
                 cout << "atlas is unchanged: " << name << endl;
-                WriteAllTimers();
+                
                 return EXIT_SUCCESS;
             }
             StopTimer(prefix);
@@ -360,7 +360,7 @@ static int Pack(size_t newHash, string &outputDir, string &name, vector<string> 
         cout << "loading images..." << endl;
     for (size_t i = 0; i < inputs.size(); ++i)
     {
-        if (!split && inputs[i].rfind('.') != string::npos)
+        if (!optSplit && inputs[i].rfind('.') != string::npos)
             LoadBitmap("", inputs[i]);
         else
             LoadBitmaps(inputs[i], prefix);
@@ -416,7 +416,7 @@ static int Pack(size_t newHash, string &outputDir, string &name, vector<string> 
 
         ofstream bin(outputDir + name + ".bin", ios::binary);
         
-        if (!split)
+        if (!optSplit)
         {
             WriteByte(bin, 'c');
             WriteByte(bin, 'r');
@@ -440,7 +440,7 @@ static int Pack(size_t newHash, string &outputDir, string &name, vector<string> 
             cout << "writing xml: " << outputDir << name << ".xml" << endl;
 
         ofstream xml(outputDir + name + ".xml");
-        if (!split)
+        if (!optSplit)
         {
             xml << "<atlas>" << endl;
             xml << "\t<trim>" << (optTrim ? "true" : "false") << "</trim>" << endl;
@@ -448,7 +448,7 @@ static int Pack(size_t newHash, string &outputDir, string &name, vector<string> 
         }
         for (size_t i = 0; i < packers.size(); ++i)
             packers[i]->SaveXml(name + (noZero ? "" : to_string(i)), xml, optTrim, optRotate);
-        if (!split) xml << "</atlas>";
+        if (!optSplit) xml << "</atlas>";
         xml.close();
     }
 
@@ -459,7 +459,7 @@ static int Pack(size_t newHash, string &outputDir, string &name, vector<string> 
             cout << "writing json: " << outputDir << name << ".json" << endl;
 
         ofstream json(outputDir + name + ".json");
-        if (!split)
+        if (!optSplit)
         {
             json << '{' << endl;
             json << "\t\"trim\":" << (optTrim ? "true" : "false") << endl;
@@ -471,14 +471,14 @@ static int Pack(size_t newHash, string &outputDir, string &name, vector<string> 
             json << "\t\t{" << endl;
             packers[i]->SaveJson(name + (noZero ? "" : to_string(i)), json, optTrim, optRotate);
             json << "\t\t}";
-            if (!split)
+            if (!optSplit)
             {
                 if (i + 1 < packers.size())
                     json << ',';
                 json << endl;
             }
         }
-        if (!split)
+        if (!optSplit)
         {
             json << "\t]" << endl;
             json << '}';
@@ -490,7 +490,7 @@ static int Pack(size_t newHash, string &outputDir, string &name, vector<string> 
     // Save the new hash
     SaveHash(newHash, outputDir + name + ".hash");
 
-    if (split) StopTimer(prefix);
+    if (optSplit) StopTimer(prefix);
 
     return EXIT_SUCCESS;
 }
@@ -690,7 +690,7 @@ int main(int argc, const char *argv[])
     {
         string newName = GetFileName(subdir), prefixedName = namePrefix + newName;
         vector<string> input{ subdir };
-        int result = Pack(newHash, outputDir, prefixedName, input, true, newName + "/");
+        int result = Pack(newHash, outputDir, prefixedName, input, newName + "/");
         if (result == EXIT_SUCCESS)
             skipped = false;
         else if(result != EXIT_SKIPPED)
@@ -703,6 +703,8 @@ int main(int argc, const char *argv[])
     if (skipped)
     {
         cout << "atlas is unchanged: " << name << endl;
+
+        StopTimer("total");
         WriteAllTimers();
         return EXIT_SUCCESS;
     }
