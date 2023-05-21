@@ -462,8 +462,8 @@ static int Pack(size_t newHash, string &outputDir, string &name, vector<string> 
         if (!optSplit)
         {
             json << '{' << endl;
-            json << "\t\"trim\":" << (optTrim ? "true" : "false") << endl;
-            json << "\t\"rotate\":" << (optRotate ? "true" : "false") << endl;
+            json << "\t\"trim\":" << (optTrim ? "true" : "false") << ',' << endl;
+            json << "\t\"rotate\":" << (optRotate ? "true" : "false") << ',' << endl;
             json << "\t\"textures\":[" << endl;
         }
         for (size_t i = 0; i < packers.size(); ++i)
@@ -664,7 +664,7 @@ int main(int argc, const char *argv[])
     }
 
     string newInput, namePrefix;
-    vector<string> subdirs, cachedPackers;
+    vector<string> subdirs;
 
     for (string &input : inputs)
     {
@@ -714,6 +714,7 @@ int main(int argc, const char *argv[])
     RemoveFile(outputDir + name + ".json");
 
     StartTimer("saving atlas");
+    vector<string> cachedPackers;
     if (optBinary)
     {
         SetStringType(optBinstr);
@@ -738,15 +739,15 @@ int main(int argc, const char *argv[])
         {
             ifstream binCache(cachedPackers[i], ios::binary);
             imageCount += ReadShort(binCache);
-            cacheFiles.push_back(&binCache);
+            binCache.close();
         }
         WriteShort(bin, imageCount);
-        for (size_t i = 0; i < cacheFiles.size(); ++i)
+        for (size_t i = 0; i < cachedPackers.size(); ++i)
         {
-            auto binCache = cacheFiles[i];
-            ReadShort(*binCache);
-            bin << binCache->rdbuf();
-            binCache->close();
+            ifstream binCache(cachedPackers[i], ios::binary);
+            ReadShort(binCache);
+            bin << binCache.rdbuf();
+            binCache.close();
         }
         bin.close();
     }
@@ -785,8 +786,8 @@ int main(int argc, const char *argv[])
 
         ofstream json(outputDir + name + ".json");
         json << '{' << endl;
-        json << "\t\"trim\":" << (optTrim ? "true" : "false") << endl;
-        json << "\t\"rotate\":" << (optRotate ? "true" : "false") << endl;
+        json << "\t\"trim\":" << (optTrim ? "true" : "false") << ',' << endl;
+        json << "\t\"rotate\":" << (optRotate ? "true" : "false") << ',' << endl;
         json << "\t\"textures\":[" << endl;
         for (size_t i = 0; i < cachedPackers.size(); ++i)
         {
