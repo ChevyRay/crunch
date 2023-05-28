@@ -26,6 +26,7 @@
 
 #include "binary.hpp"
 #include <iostream>
+#include <cstdint>
 
 static int type;
 

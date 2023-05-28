@@ -88,7 +88,7 @@
 
 using namespace std;
 
-const char *version = "v0.1";
+const char *version = "v0.11";
 const int binVersion = 0;
 
 static int optSize;

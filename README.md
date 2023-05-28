@@ -1,4 +1,4 @@
-# crunch
+# crunch v0.11
 
 This is a command line tool that will pack a bunch of images into a single, larger image. It was designed for [Celeste](http://www.celestegame.com/), but could be very helpful for other games.
 
