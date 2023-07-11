@@ -1,4 +1,4 @@
-# crunch v0.11
+# crunch v0.12
 
 This is a command line tool that will pack a bunch of images into a single, larger image. It was designed for [Celeste](http://www.celestegame.com/), but could be very helpful for other games.
 
@@ -71,6 +71,8 @@ bin/atlases/atlas.hash
 | `-u`            | `--unique`      | remove duplicate bitmaps from the atlas |
 | `-r`            | `--rotate`      | enabled rotating bitmaps 90 degrees clockwise when packing |
 | `-s#`           | `--size#`       | max atlas size (`#` can be `4096`, `2048`, `1024`, `512`, `256`, `128`, or `64`) |
+| `-w#`           | `--width#`      | max atlas width (overrides `--size`) (`#` can be `4096`, `2048`, `1024`, `512`, `256`, `128`, or `64`) |
+| `-h#`           | `--height#`     | max atlas height (overrides `--size`) (`#` can be `4096`, `2048`, `1024`, `512`, `256`, `128`, or `64`) |
 | `-p#`           | `--pad#`        | padding between images (`#` can be from `0` to `16`) |
 | `-bs%`          | `--binstr%`     | string type in binary format (`%` can be: `n` - null-termainated, `p` - prefixed (int16), `7` - 7-bit prefixed) |
 | `-tm`           | `--time`        | use file's last write time instead of its contents for hashing |
@@ -80,7 +82,7 @@ bin/atlases/atlas.hash
 ## Binary Format
 
 ```text
-crch (0x68637263 in hex or 1751347811 in decimal)
+crch (0x68637263 in hex or 1751347811 in decimal (little endian))
 [int16] version (current version is 0)
 [byte] --trim enabled
 [byte] --rotate enabled

@@ -43,6 +43,8 @@
     -u    --unique            remove duplicate bitmaps from the atlas
     -r    --rotate            enabled rotating bitmaps 90 degrees clockwise when packing
     -s#   --size#             max atlas size (# can be 4096, 2048, 1024, 512, 256, 128, or 64)
+    -w#   --width#            max atlas width (overrides --size) (# can be 4096, 2048, 1024, 512, 256, 128, or 64)
+    -h#   --height#           max atlas height (overrides --size) (# can be 4096, 2048, 1024, 512, 256, 128, or 64)
     -p#   --pad#              padding between images (# can be from 0 to 16)
     -bs%  --binstr%           string type in binary format (% can be: n - null-termainated, p - prefixed (int16), 7 - 7-bit prefixed)
     -tm   --time              use file's last write time instead of its content for hashing
@@ -88,10 +90,12 @@
 
 using namespace std;
 
-const char *version = "v0.11";
+const char *version = "v0.12";
 const int binVersion = 0;
 
 static int optSize;
+static int optWidth;
+static int optHeight;
 static int optPadding;
 static int optBinstr;
 static bool optXml;
@@ -128,6 +132,8 @@ static const char *helpMessage =
     "   -u    --unique            remove duplicate bitmaps from the atlas\n"
     "   -r    --rotate            enabled rotating bitmaps 90 degrees clockwise when packing\n"
     "   -s#   --size#             max atlas size (# can be 4096, 2048, 1024, 512, 256, 128, or 64)\n"
+    "   -w#   --width#            max atlas width (overrides --size) (# can be 4096, 2048, 1024, 512, 256, 128, or 64)\n"
+    "   -h#   --height#           max atlas height (overrides --size) (# can be 4096, 2048, 1024, 512, 256, 128, or 64)\n"
     "   -p#   --pad#              padding between images (# can be from 0 to 16)\n"
     "   -bs%  --binstr%           string type in binary format (% can be: n - null-termainated, p - prefixed (int16), 7 - 7-bit prefixed)\n"
     "   -tm   --time              use file's last write time instead of its content for hashing\n"
@@ -379,7 +385,7 @@ static int Pack(size_t newHash, string &outputDir, string &name, vector<string> 
     {
         if (optVerbose)
             cout << "packing " << bitmaps.size() << " images..." << endl;
-        auto packer = new Packer(optSize, optSize, optPadding);
+        auto packer = new Packer(optWidth, optHeight, optPadding);
         packer->Pack(bitmaps, optVerbose, optUnique, optRotate);
         packers.push_back(packer);
         if (optVerbose)
@@ -584,18 +590,32 @@ int main(int argc, const char *argv[])
             optSplit = true;
         else if (arg == "-nz" || arg == "--nozero")
             optNoZero = true;
-        else if (arg.find("-bs") == 0)
-            optBinstr = GetBinStrType(arg.substr(3));
+
         else if (arg.find("--binstr") == 0)
             optBinstr = GetBinStrType(arg.substr(8));
+        else if (arg.find("-bs") == 0)
+            optBinstr = GetBinStrType(arg.substr(3));
+
         else if (arg.find("--size") == 0)
             optSize = GetPackSize(arg.substr(6));
         else if (arg.find("-s") == 0)
             optSize = GetPackSize(arg.substr(2));
+
+        else if (arg.find("--width") == 0)
+            optWidth = GetPackSize(arg.substr(7));
+        else if (arg.find("-w") == 0)
+            optWidth = GetPackSize(arg.substr(2));
+
+        else if (arg.find("--height") == 0)
+            optHeight = GetPackSize(arg.substr(8));
+        else if (arg.find("-h") == 0)
+            optHeight = GetPackSize(arg.substr(2));
+
         else if (arg.find("--pad") == 0)
             optPadding = GetPadding(arg.substr(5));
         else if (arg.find("-p") == 0)
             optPadding = GetPadding(arg.substr(2));
+
         else
         {
             cerr << "unexpected argument: " << arg << endl;
@@ -603,23 +623,28 @@ int main(int argc, const char *argv[])
         }
     }
 
+    if (optWidth == 0) optWidth = optSize;
+    if (optHeight == 0) optHeight = optSize;
+
     /*
-    -d  --default           use default settings (-x -p -t -u)
-    -x  --xml               saves the atlas data as a .xml file
-    -b  --binary            saves the atlas data as a .bin file
-    -j  --json              saves the atlas data as a .json file
-    -p  --premultiply       premultiplies the pixels of the bitmaps by their alpha channel
-    -t  --trim              trims excess transparency off the bitmaps
-    -v  --verbose           print to the debug console as the packer works
-    -f  --force             ignore the hash, forcing the packer to repack
-    -u  --unique            remove duplicate bitmaps from the atlas
-    -r  --rotate            enabled rotating bitmaps 90 degrees clockwise when packing
-    -s# --size#             max atlas size (# can be 4096, 2048, 1024, 512, or 256)
-    -p# --pad#              padding between images (# can be from 0 to 16)
-    -bs%  --binstr%         string type in binary format (% can be: n - null-termainated, p - prefixed (int16), 7 - 7-bit prefixed)
-    -tm   --time            use file's last write time instead of its content for hashing
-    -sp   --split           split output textures by subdirectories
-    -nz   --nozero          if there's ony one packed texture, then zero at the end of its name will be omitted (ex. images0.png -> images.png)
+        -d    --default         use default settings (-x -p -t -u)
+        -x    --xml             saves the atlas data as a .xml file
+        -b    --binary          saves the atlas data as a .bin file
+        -j    --json            saves the atlas data as a .json file
+        -p    --premultiply     premultiplies the pixels of the bitmaps by their alpha channel
+        -t    --trim            trims excess transparency off the bitmaps
+        -v    --verbose         print to the debug console as the packer works
+        -f    --force           ignore the hash, forcing the packer to repack
+        -u    --unique          remove duplicate bitmaps from the atlas
+        -r    --rotate          enabled rotating bitmaps 90 degrees clockwise when packing
+        -s#   --size#           max atlas size (# can be 4096, 2048, 1024, 512, or 256)
+        -w#   --width#           max atlas width (overrides --size) (# can be 4096, 2048, 1024, 512, 256, 128, or 64)
+        -h#   --height#          max atlas height (overrides --size) (# can be 4096, 2048, 1024, 512, 256, 128, or 64)
+        -p#   --pad#            padding between images (# can be from 0 to 16)
+        -bs%  --binstr%         string type in binary format (% can be: n - null-termainated, p - prefixed (int16), 7 - 7-bit prefixed)
+        -tm   --time            use file's last write time instead of its content for hashing
+        -sp   --split           split output textures by subdirectories
+        -nz   --nozero          if there's ony one packed texture, then zero at the end of its name will be omitted (ex. images0.png -> images.png)
     */
 
     if (optVerbose)
@@ -634,7 +659,12 @@ int main(int argc, const char *argv[])
         cout << "\t--force: " << (optForce ? "true" : "false") << endl;
         cout << "\t--unique: " << (optUnique ? "true" : "false") << endl;
         cout << "\t--rotate: " << (optRotate ? "true" : "false") << endl;
-        cout << "\t--size: " << optSize << endl;
+        if(optWidth == optHeight) cout << "\t--size: " << optWidth << endl;
+        else
+        {
+            cout << "\t--width: " << optWidth << endl;
+            cout << "\t--height: " << optHeight << endl;
+        }
         cout << "\t--pad: " << optPadding << endl;
         cout << "\t--binstr: " << (optBinstr == 0 ? "n" : (optBinstr == 1 ? "p" : "7")) << endl;
         cout << "\t--time: " << (optTime ? "true" : "false") << endl;
