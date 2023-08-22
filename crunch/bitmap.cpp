@@ -30,10 +30,11 @@
 #include "lodepng.h"
 #include <algorithm>
 #include "hash.hpp"
+#include "time.hpp"
 
 using namespace std;
 
-Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool trim)
+Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool trim, bool verbose)
 : name(name)
 {
     //Load the png file
@@ -47,6 +48,7 @@ Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool tr
     int w = static_cast<int>(pw);
     int h = static_cast<int>(ph);
     uint32_t* pixels = reinterpret_cast<uint32_t*>(pdata);
+
     
     //Premultiply all the pixels by their alpha
     if (premultiply)
@@ -56,13 +58,13 @@ Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool tr
         float m;
         for (int i = 0; i < count; ++i)
         {
-			c = pixels[i];
-			a = c >> 24;
-			m = static_cast<float>(a) / 255.0f;
-			r = static_cast<uint32_t>((c & 0xff) * m);
-			g = static_cast<uint32_t>(((c >> 8) & 0xff) * m);
-			b = static_cast<uint32_t>(((c >> 16) & 0xff) * m);
-			pixels[i] = (a << 24) | (b << 16) | (g << 8) | r;
+            c = pixels[i];
+            a = c >> 24;
+            m = static_cast<float>(a) / 255.0f;
+            r = static_cast<uint32_t>((c & 0xff) * m);
+            g = static_cast<uint32_t>(((c >> 8) & 0xff) * m);
+            b = static_cast<uint32_t>(((c >> 16) & 0xff) * m);
+            pixels[i] = (a << 24) | (b << 16) | (g << 8) | r;
         }
     }
     
@@ -96,7 +98,7 @@ Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool tr
             minY = 0;
             maxX = w - 1;
             maxY = h - 1;
-            cout << "image is completely transparent: " << file << endl;
+            if (verbose) cout << "image is completely transparent: " << file << endl;
         }
     }
     else
@@ -106,7 +108,7 @@ Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool tr
         maxX = w - 1;
         maxY = h - 1;
     }
-    
+
     //Calculate our trimmed size
     width = (maxX - minX) + 1;
     height = (maxY - minY) + 1;
@@ -135,7 +137,7 @@ Bitmap::Bitmap(const string& file, const string& name, bool premultiply, bool tr
         //Free the untrimmed pixels
         free(pixels);
     }
-    
+
     //Generate a hash for the bitmap
     hashValue = 0;
     HashCombine(hashValue, static_cast<size_t>(width));

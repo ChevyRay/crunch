@@ -44,7 +44,7 @@ struct Bitmap
     int frameH;
     uint32_t* data;
     size_t hashValue;
-    Bitmap(const string& file, const string& name, bool premultiply, bool trim);
+    Bitmap(const string& file, const string& name, bool premultiply, bool trim, bool verbose);
     Bitmap(int width, int height);
     ~Bitmap();
     void SaveAs(const string& file);

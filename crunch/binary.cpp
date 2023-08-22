@@ -26,10 +26,50 @@
 
 #include "binary.hpp"
 #include <iostream>
+#include <cstdint>
+
+static int type;
+
+void SetStringType(int t)
+{
+    type = t;
+}
 
 void WriteString(ofstream& bin, const string& value)
 {
+    switch (type)
+    {
+        case 0: WriteStringNullTerminated(bin, value); break;
+        case 1: WriteStringPrefixed(bin, value); break;
+        case 2: WriteString7BitPrefixed(bin, value); break;
+    }
+}
+
+void WriteStringNullTerminated(ofstream& bin, const string& value)
+{
     bin.write(value.data(), value.length() + 1);
+}
+
+void WriteStringPrefixed(ofstream& bin, const string& value)
+{
+    WriteShort(bin, static_cast<int16_t>(value.length()));
+    bin.write(value.data(), value.length());
+}
+
+void WriteString7BitPrefixed(ofstream& bin, const string& value)
+{
+    // Using 7-bit encoding algorithm from dotnet
+    // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/IO/BinaryWriter.cs#L473
+    
+    int16_t length = static_cast<int16_t>(value.length());
+    while (length > 0x7Fu)
+    {
+        WriteByte(bin, static_cast<uint8_t>(length | ~0x7Fu));
+        length >>= 7;
+    }
+
+    WriteByte(bin, static_cast<uint8_t>(length));
+    bin.write(value.data(), value.length());
 }
 
 void WriteShort(ofstream& bin, int16_t value)
