@@ -1,19 +1,19 @@
 /*
- 
+
  MIT License
- 
+
  Copyright (c) 2017 Chevy Ray Johnston
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included in all
  copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,411 +21,409 @@
  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
- 
- crunch - command line texture packer
- ====================================
- 
- usage:
-    crunch [OUTPUT] [INPUT1,INPUT2,INPUT3...] [OPTIONS...]
- 
- example:
-    crunch bin/atlases/atlas assets/characters,assets/tiles -p -t -v -u -r
- 
- options:
-    -d  --default           use default settings (-x -p -t -u)
-    -x  --xml               saves the atlas data as a .xml file
-    -b  --binary            saves the atlas data as a .bin file
-    -j  --json              saves the atlas data as a .json file
-    -p  --premultiply       premultiplies the pixels of the bitmaps by their alpha channel
-    -t  --trim              trims excess transparency off the bitmaps
-    -v  --verbose           print to the debug console as the packer works
-    -f  --force             ignore the hash, forcing the packer to repack
-    -u  --unique            remove duplicate bitmaps from the atlas
-    -r  --rotate            enabled rotating bitmaps 90 degrees clockwise when packing
-    -s# --size#             max atlas size (# can be 4096, 2048, 1024, 512, 256, 128, or 64)
-    -p# --pad#              padding between images (# can be from 0 to 16)
- 
- binary format:
-    [int16] num_textures (below block is repeated this many times)
-        [string] name
-        [int16] num_images (below block is repeated this many times)
-            [string] img_name
-            [int16] img_x
-            [int16] img_y
-            [int16] img_width
-            [int16] img_height
-            [int16] img_frame_x         (if --trim enabled)
-            [int16] img_frame_y         (if --trim enabled)
-            [int16] img_frame_width     (if --trim enabled)
-            [int16] img_frame_height    (if --trim enabled)
-            [byte] img_rotated          (if --rotate enabled)
+
  */
 
-#include <iostream>
+#include <algorithm>
+#include <cstdint>
+#include <filesystem>
 #include <fstream>
-#include <streambuf>
+#include <iostream>
 #include <sstream>
+#include <streambuf>
 #include <string>
 #include <vector>
-#include <algorithm>
-#include "tinydir.h"
-#include "bitmap.hpp"
-#include "packer.hpp"
+
 #include "binary.hpp"
+#include "bitmap.hpp"
+#include "cli.hpp"
 #include "hash.hpp"
-#include "str.hpp"
+#include "options.hpp"
+#include "packer.hpp"
+
+#define EXIT_SKIPPED 2
 
 using namespace std;
+namespace fs = std::filesystem;
 
-static int optSize;
-static int optPadding;
-static bool optXml;
-static bool optBinary;
-static bool optJson;
-static bool optPremultiply;
-static bool optTrim;
-static bool optVerbose;
-static bool optForce;
-static bool optUnique;
-static bool optRotate;
-static vector<Bitmap*> bitmaps;
-static vector<Packer*> packers;
+const int binVersion = 0;
 
-static void SplitFileName(const string& path, string* dir, string* name, string* ext)
+static string NormalizePath(const string &path)
 {
-    size_t si = path.rfind('/') + 1;
-    if (si == string::npos)
-        si = 0;
-    size_t di = path.rfind('.');
-    if (dir != nullptr)
+    string str = path;
+    replace(str.begin(), str.end(), '\\', '/');
+    return str;
+}
+
+static void LoadBitmap(const string &path, const string &name, vector<Bitmap *> &bitmaps)
+{
+    if (options.verbose)
+        cout << '\t' << path << endl;
+
+    bitmaps.push_back(new Bitmap(path, name, options.premultiply, options.trim));
+}
+
+static void LoadBitmaps(const string &root, const string &prefix, vector<Bitmap *> &bitmaps)
+{
+    for (const auto &entry : fs::directory_iterator(root))
     {
-        if (si > 0)
-            *dir = path.substr(0, si);
+        fs::path path = entry.path();
+        string pathName = path.string();
+
+        if (entry.is_directory())
+            LoadBitmaps(pathName, prefix + path.filename().string() + '/', bitmaps);
+        else if (path.extension().string() == ".png")
+            LoadBitmap(pathName, NormalizePath(prefix + path.stem().string()), bitmaps);
+    }
+}
+
+static void FindPackers(const string &root, const string &name, const string &ext, vector<string> &packers)
+{
+    for (auto &entry : fs::directory_iterator(root))
+    {
+        if (entry.is_directory())
+            continue;
+
+        fs::path path = entry.path();
+
+        if (path.filename().string().starts_with(name) && path.extension().string() == ext)
+            packers.push_back(path.string());
+    }
+}
+
+static int Pack(uint64_t newHash, string &outputDirectory, string &name, vector<string> &inputs, string prefix = "")
+{
+    string outputName = name;
+
+    if (!outputDirectory.empty())
+        outputName = outputDirectory + '/' + outputName;
+
+    for (auto &input : inputs)
+        if (fs::is_directory(input))
+            HashFiles(newHash, input, options.useTimeForHash);
         else
-            *dir = "";
-    }
-    if (name != nullptr)
-    {
-        if (di != string::npos)
-            *name = path.substr(si, di - si);
-        else
-            *name = path.substr(si);
-    }
-    if (ext != nullptr)
-    {
-        if (di != string::npos)
-            *ext = path.substr(di);
-        else
-            *ext = "";
-    }
-}
+            HashFile(newHash, input, options.useTimeForHash);
 
-static string GetFileName(const string& path)
-{
-    string name;
-    SplitFileName(path, nullptr, &name, nullptr);
-    return name;
-}
+    // Load the old hash
+    uint64_t oldHash;
+    if (!options.force && LoadHash(oldHash, outputName + ".hash") && newHash == oldHash)
+    {
+        if (options.splitSubdirectories)
+            return EXIT_SKIPPED;
 
-static void LoadBitmap(const string& prefix, const string& path)
-{
-    if (optVerbose)
-        cout << '\t' << PathToStr(path) << endl;
-    
-    bitmaps.push_back(new Bitmap(PathToStr(path), prefix + GetFileName(PathToStr(path)), optPremultiply, optTrim));
-}
+        cout << "atlas is unchanged: " << name << endl;
+        return EXIT_SUCCESS;
+    }
 
-static void LoadBitmaps(const string& root, const string& prefix)
-{
-    static string dot1 = ".";
-    static string dot2 = "..";
-    
-    tinydir_dir dir;
-    tinydir_open(&dir, StrToPath(root).data());
-    
-    while (dir.has_next)
-    {
-        tinydir_file file;
-        tinydir_readfile(&dir, &file);
-        
-        if (file.is_dir)
-        {
-            if (dot1 != PathToStr(file.name) && dot2 != PathToStr(file.name))
-                LoadBitmaps(PathToStr(file.path), prefix + PathToStr(file.name) + "/");
-        }
-        else if (PathToStr(file.extension) == "png")
-            LoadBitmap(prefix, file.path);
-        
-        tinydir_next(&dir);
-    }
-    
-    tinydir_close(&dir);
-}
+    // Remove old files
+    fs::remove(outputName + ".hash");
+    fs::remove(outputName + ".bin");
+    fs::remove(outputName + ".xml");
+    fs::remove(outputName + ".json");
+    fs::remove(outputName + ".png");
+    for (int i = 0; i < 16; ++i)
+        fs::remove(outputName + to_string(i) + ".png");
 
-static void RemoveFile(string file)
-{
-    remove(file.data());
-}
-
-static int GetPackSize(const string& str)
-{
-    if (str == "4096")
-        return 4096;
-    if (str == "2048")
-        return 2048;
-    if (str == "1024")
-        return 1024;
-    if (str == "512")
-        return 512;
-    if (str == "256")
-        return 256;
-    if (str == "128")
-        return 128;
-    if (str == "64")
-        return 64;
-    cerr << "invalid size: " << str << endl;
-    exit(EXIT_FAILURE);
-    return 0;
-}
-
-static int GetPadding(const string& str)
-{
-    for (int i = 0; i <= 16; ++i)
-        if (str == to_string(i))
-            return i;
-    cerr << "invalid padding value: " << str << endl;
-    exit(EXIT_FAILURE);
-    return 1;
-}
-
-int main(int argc, const char* argv[])
-{
-    //Print out passed arguments
-    for (int i = 0; i < argc; ++i)
-        cout << argv[i] << ' ';
-    cout << endl;
-    
-    if (argc < 3)
-    {
-        cerr << "invalid input, expected: \"crunch [INPUT DIRECTORY] [OUTPUT PREFIX] [OPTIONS...]\"" << endl;
-        return EXIT_FAILURE;
-    }
-    
-    //Get the output directory and name
-    string outputDir, name;
-    SplitFileName(argv[1], &outputDir, &name, nullptr);
-    
-    //Get all the input files and directories
-    vector<string> inputs;
-    stringstream ss(argv[2]);
-    while (ss.good())
-    {
-        string inputStr;
-        getline(ss, inputStr, ',');
-        inputs.push_back(inputStr);
-    }
-    
-    //Get the options
-    optSize = 4096;
-    optPadding = 1;
-    optXml = false;
-    optBinary = false;
-    optJson = false;
-    optPremultiply = false;
-    optTrim = false;
-    optVerbose = false;
-    optForce = false;
-    optUnique = false;
-    for (int i = 3; i < argc; ++i)
-    {
-        string arg = argv[i];
-        if (arg == "-d" || arg == "--default")
-            optXml = optPremultiply = optTrim = optUnique = true;
-        else if (arg == "-x" || arg == "--xml")
-            optXml = true;
-        else if (arg == "-b" || arg == "--binary")
-            optBinary = true;
-        else if (arg == "-j" || arg == "--json")
-            optJson = true;
-        else if (arg == "-p" || arg == "--premultiply")
-            optPremultiply = true;
-        else if (arg == "-t" || arg == "--trim")
-            optTrim = true;
-        else if (arg == "-v" || arg == "--verbose")
-            optVerbose = true;
-        else if (arg == "-f" || arg == "--force")
-            optForce = true;
-        else if (arg == "-u" || arg == "--unique")
-            optUnique = true;
-        else if (arg == "-r" || arg == "--rotate")
-            optRotate = true;
-        else if (arg.find("--size") == 0)
-            optSize = GetPackSize(arg.substr(6));
-        else if (arg.find("-s") == 0)
-            optSize = GetPackSize(arg.substr(2));
-        else if (arg.find("--pad") == 0)
-            optPadding = GetPadding(arg.substr(5));
-        else if (arg.find("-p") == 0)
-            optPadding = GetPadding(arg.substr(2));
-        else
-        {
-            cerr << "unexpected argument: " << arg << endl;
-            return EXIT_FAILURE;
-        }
-    }
-    
-    //Hash the arguments and input directories
-    size_t newHash = 0;
-    for (int i = 1; i < argc; ++i)
-        HashString(newHash, argv[i]);
-    for (size_t i = 0; i < inputs.size(); ++i)
-    {
-        if (inputs[i].rfind('.') == string::npos)
-            HashFiles(newHash, inputs[i]);
-        else
-            HashFile(newHash, inputs[i]);
-    }
-    
-    //Load the old hash
-    size_t oldHash;
-    if (LoadHash(oldHash, outputDir + name + ".hash"))
-    {
-        if (!optForce && newHash == oldHash)
-        {
-            cout << "atlas is unchanged: " << name << endl;
-            return EXIT_SUCCESS;
-        }
-    }
-    
-    /*-d  --default           use default settings (-x -p -t -u)
-    -x  --xml               saves the atlas data as a .xml file
-    -b  --binary            saves the atlas data as a .bin file
-    -j  --json              saves the atlas data as a .json file
-    -p  --premultiply       premultiplies the pixels of the bitmaps by their alpha channel
-    -t  --trim              trims excess transparency off the bitmaps
-    -v  --verbose           print to the debug console as the packer works
-    -f  --force             ignore the hash, forcing the packer to repack
-    -u  --unique            remove duplicate bitmaps from the atlas
-    -r  --rotate            enabled rotating bitmaps 90 degrees clockwise when packing
-    -s# --size#             max atlas size (# can be 4096, 2048, 1024, 512, or 256)
-    -p# --pad#              padding between images (# can be from 0 to 16)*/
-    
-    if (optVerbose)
-    {
-        cout << "options..." << endl;
-        cout << "\t--xml: " << (optXml ? "true" : "false") << endl;
-        cout << "\t--binary: " << (optBinary ? "true" : "false") << endl;
-        cout << "\t--json: " << (optJson ? "true" : "false") << endl;
-        cout << "\t--premultiply: " << (optPremultiply ? "true" : "false") << endl;
-        cout << "\t--trim: " << (optTrim ? "true" : "false") << endl;
-        cout << "\t--verbose: " << (optVerbose ? "true" : "false") << endl;
-        cout << "\t--force: " << (optForce ? "true" : "false") << endl;
-        cout << "\t--unique: " << (optUnique ? "true" : "false") << endl;
-        cout << "\t--rotate: " << (optRotate ? "true" : "false") << endl;
-        cout << "\t--size: " << optSize << endl;
-        cout << "\t--pad: " << optPadding << endl;
-    }
-    
-    //Remove old files
-    RemoveFile(outputDir + name + ".hash");
-    RemoveFile(outputDir + name + ".bin");
-    RemoveFile(outputDir + name + ".xml");
-    RemoveFile(outputDir + name + ".json");
-    for (size_t i = 0; i < 16; ++i)
-        RemoveFile(outputDir + name + to_string(i) + ".png");
-    
-    //Load the bitmaps from all the input files and directories
-    if (optVerbose)
+    // Load the bitmaps from all the input files and directories
+    if (options.verbose)
         cout << "loading images..." << endl;
-    for (size_t i = 0; i < inputs.size(); ++i)
+
+    vector<Bitmap *> bitmaps;
+    for (auto &input : inputs)
     {
-        if (inputs[i].rfind('.') != string::npos)
-            LoadBitmap("", inputs[i]);
+        if (fs::is_directory(input))
+            LoadBitmaps(input, prefix, bitmaps);
         else
-            LoadBitmaps(inputs[i], "");
+            LoadBitmap(input, prefix + input, bitmaps);
     }
-    
-    //Sort the bitmaps by area
-    sort(bitmaps.begin(), bitmaps.end(), [](const Bitmap* a, const Bitmap* b) {
-        return (a->width * a->height) < (b->width * b->height);
-    });
-    
-    //Pack the bitmaps
+
+    // Sort the bitmaps by area
+    stable_sort(bitmaps.begin(), bitmaps.end(), [](const Bitmap *a, const Bitmap *b)
+                { return (a->width * a->height) < (b->width * b->height); });
+
+    // Pack the bitmaps
+    vector<Packer *> packers;
     while (!bitmaps.empty())
     {
-        if (optVerbose)
+        if (options.verbose)
             cout << "packing " << bitmaps.size() << " images..." << endl;
-        auto packer = new Packer(optSize, optSize, optPadding);
-        packer->Pack(bitmaps, optVerbose, optUnique, optRotate);
+
+        auto packer = new Packer(options.width, options.height, options.padding, options.stretch);
+        packer->Pack(bitmaps, options.unique, options.rotate, options.choiceHeuristic);
         packers.push_back(packer);
-        if (optVerbose)
-            cout << "finished packing: " << name << to_string(packers.size() - 1) << " (" << packer->width << " x " << packer->height << ')' << endl;
-    
+
+        if (options.verbose)
+            cout << "finished packing: " << name << (options.noZero && bitmaps.empty() ? "" : to_string(packers.size() - 1)) << " (" << packer->width << " x " << packer->height << ')' << endl;
+
         if (packer->bitmaps.empty())
         {
             cerr << "packing failed, could not fit bitmap: " << (bitmaps.back())->name << endl;
             return EXIT_FAILURE;
         }
     }
-    
-    //Save the atlas image
-    for (size_t i = 0; i < packers.size(); ++i)
+
+    bool noZero = options.noZero && packers.size() == 1;
+
+    // Save the atlas image
+    for (int i = 0; i < packers.size(); ++i)
     {
-        if (optVerbose)
-            cout << "writing png: " << outputDir << name << to_string(i) << ".png" << endl;
-        packers[i]->SavePng(outputDir + name + to_string(i) + ".png");
+        string pngName = outputName + (noZero ? "" : to_string(i)) + ".png";
+        if (options.verbose)
+            cout << "writing png: " << pngName << endl;
+        packers[i]->SavePng(pngName);
     }
-    
-    //Save the atlas binary
-    if (optBinary)
+
+    // Save the atlas binary
+    if (options.binary)
     {
-        if (optVerbose)
-            cout << "writing bin: " << outputDir << name << ".bin" << endl;
-        
-        ofstream bin(outputDir + name + ".bin", ios::binary);
+        if (options.verbose)
+            cout << "writing bin: " << outputName << ".bin" << endl;
+
+        ofstream bin(outputName + ".bin", ios::binary);
+
+        if (!options.splitSubdirectories)
+        {
+            WriteByte(bin, 'c');
+            WriteByte(bin, 'r');
+            WriteByte(bin, 'c');
+            WriteByte(bin, 'h');
+            WriteShort(bin, binVersion);
+            WriteByte(bin, options.trim);
+            WriteByte(bin, options.rotate);
+            WriteByte(bin, (char)options.binaryStringFormat);
+        }
         WriteShort(bin, (int16_t)packers.size());
-        for (size_t i = 0; i < packers.size(); ++i)
-            packers[i]->SaveBin(name + to_string(i), bin, optTrim, optRotate);
+        for (int i = 0; i < packers.size(); ++i)
+            packers[i]->SaveBin(name + (noZero ? "" : to_string(i)), bin, options.trim, options.rotate);
         bin.close();
     }
-    
-    //Save the atlas xml
-    if (optXml)
+
+    // Save the atlas xml
+    if (options.xml)
     {
-        if (optVerbose)
-            cout << "writing xml: " << outputDir << name << ".xml" << endl;
-        
-        ofstream xml(outputDir + name + ".xml");
-        xml << "<atlas>" << endl;
-        for (size_t i = 0; i < packers.size(); ++i)
-            packers[i]->SaveXml(name + to_string(i), xml, optTrim, optRotate);
-        xml << "</atlas>";
-    }
-    
-    //Save the atlas json
-    if (optJson)
-    {
-        if (optVerbose)
-            cout << "writing json: " << outputDir << name << ".json" << endl;
-        
-        ofstream json(outputDir + name + ".json");
-        json << '{' << endl;
-        json << "\t\"textures\":[" << endl;
-        for (size_t i = 0; i < packers.size(); ++i)
+        if (options.verbose)
+            cout << "writing xml: " << outputName << ".xml" << endl;
+
+        ofstream xml(outputName + ".xml");
+        if (!options.splitSubdirectories)
         {
-            json << "\t\t{" << endl;
-            packers[i]->SaveJson(name + to_string(i), json, optTrim, optRotate);
-            json << "\t\t}";
-            if (i + 1 < packers.size())
+            xml << "<atlas>" << endl;
+            xml << "\t<trim>" << (options.trim ? "true" : "false") << "</trim>" << endl;
+            xml << "\t<rotate>" << (options.rotate ? "true" : "false") << "</trim>" << endl;
+        }
+        for (int i = 0; i < packers.size(); ++i)
+            packers[i]->SaveXml(name + (noZero ? "" : to_string(i)), xml, options.trim, options.rotate);
+        if (!options.splitSubdirectories)
+            xml << "</atlas>" << endl;
+        xml.close();
+    }
+
+    // Save the atlas json
+    if (options.json)
+    {
+        if (options.verbose)
+            cout << "writing json: " << outputName << ".json" << endl;
+
+        ofstream json(outputName + ".json");
+        if (!options.splitSubdirectories)
+        {
+            json << '{' << endl;
+            json << "\t\"trim\": " << (options.trim ? "true" : "false") << ',' << endl;
+            json << "\t\"rotate\": " << (options.rotate ? "true" : "false") << ',' << endl;
+            json << "\t\"textures\": {" << endl;
+        }
+        for (int i = 0; i < packers.size(); ++i)
+        {
+            packers[i]->SaveJson(name + (noZero ? "" : to_string(i)), json, options.trim, options.rotate);
+            if (!options.splitSubdirectories)
+            {
+                if (i != packers.size() - 1)
+                    json << ',';
+                json << endl;
+            }
+        }
+        if (!options.splitSubdirectories)
+        {
+            json << "\t}" << endl;
+            json << '}' << endl;
+        }
+        json.close();
+    }
+
+    // Save the new hash
+    SaveHash(newHash, outputName + ".hash");
+
+    return EXIT_SUCCESS;
+}
+
+int main(int argc, const char *argv[])
+{
+    PrintHelp(argc, argv);
+
+    // Get the output directory and name
+    fs::path outputPath = NormalizePath(argv[1]);
+    string outputDir = outputPath.parent_path().string(), name = outputPath.filename().string();
+    string outputName = outputPath.string();
+
+    // Get all the input files and directories
+    vector<string> inputs;
+    stringstream ss(argv[2]);
+    while (ss.good())
+    {
+        string inputStr;
+        getline(ss, inputStr, ',');
+        inputs.push_back(NormalizePath(inputStr));
+    }
+
+    ParseArguments(argc, argv, 3);
+
+    // Hash the arguments and input directories
+    uint64_t newHash = 0;
+    for (int i = 1; i < argc; ++i)
+        HashString(newHash, argv[i]);
+
+    if (!options.splitSubdirectories)
+    {
+        int result = Pack(newHash, outputDir, name, inputs);
+
+        if (result != EXIT_SUCCESS)
+            return result;
+
+        return EXIT_SUCCESS;
+    }
+
+    string newInput, namePrefix;
+    for (string &input : inputs)
+    {
+        if (!input.ends_with(".png"))
+        {
+            newInput = input;
+            break;
+        }
+    }
+
+    if (newInput.empty())
+    {
+        cerr << "could not find directories in input" << endl;
+        return EXIT_FAILURE;
+    }
+
+    namePrefix = name + "_";
+
+    bool skipped = true;
+    for (auto &subdir : fs::directory_iterator(newInput))
+    {
+        if (!subdir.is_directory())
+            continue;
+
+        string newName = subdir.path().filename().string(), prefixedName = namePrefix + newName;
+        vector<string> input{subdir.path().string()};
+        int result = Pack(newHash, outputDir, prefixedName, input, newName + '/');
+
+        if (result == EXIT_SUCCESS)
+            skipped = false;
+        else if (result != EXIT_SKIPPED)
+            return result;
+    }
+
+    if (skipped)
+    {
+        cout << "atlas is unchanged: " << name << endl;
+
+        return EXIT_SUCCESS;
+    }
+
+    fs::remove(outputName + ".bin");
+    fs::remove(outputName + ".xml");
+    fs::remove(outputName + ".json");
+
+    vector<string> cachedPackers;
+
+    if (options.binary)
+    {
+        if (options.verbose)
+            cout << "writing bin: " << outputName << ".bin" << endl;
+
+        FindPackers(outputDir, namePrefix, ".bin", cachedPackers);
+
+        ofstream bin(outputName + ".bin", ios::binary);
+        WriteByte(bin, 'c');
+        WriteByte(bin, 'r');
+        WriteByte(bin, 'c');
+        WriteByte(bin, 'h');
+        WriteShort(bin, binVersion);
+        WriteByte(bin, options.trim);
+        WriteByte(bin, options.rotate);
+        WriteByte(bin, (char)options.binaryStringFormat);
+
+        int16_t imageCount = 0;
+        for (int i = 0; i < cachedPackers.size(); ++i)
+        {
+            ifstream binCache(cachedPackers[i], ios::binary);
+            imageCount += ReadShort(binCache);
+            binCache.close();
+        }
+        WriteShort(bin, imageCount);
+        for (int i = 0; i < cachedPackers.size(); ++i)
+        {
+            ifstream binCache(cachedPackers[i], ios::binary);
+            ReadShort(binCache);
+            bin << binCache.rdbuf();
+            binCache.close();
+        }
+        bin.close();
+    }
+
+    if (options.xml)
+    {
+        if (options.verbose)
+            cout << "writing xml: " << outputName << ".xml" << endl;
+
+        cachedPackers.clear();
+
+        FindPackers(outputDir, namePrefix, ".xml", cachedPackers);
+
+        ofstream xml(outputName + ".xml");
+        xml << "<atlas>" << endl;
+        xml << "\t<trim>" << (options.trim ? "true" : "false") << "</trim>" << endl;
+        xml << "\t<rotate>" << (options.rotate ? "true" : "false") << "</trim>" << endl;
+        for (int i = 0; i < cachedPackers.size(); ++i)
+        {
+            ifstream xmlCache(cachedPackers[i]);
+            xml << xmlCache.rdbuf();
+            xmlCache.close();
+        }
+        xml << "</atlas>" << endl;
+        xml.close();
+    }
+
+    if (options.json)
+    {
+        if (options.verbose)
+            cout << "writing json: " << outputName << ".json" << endl;
+
+        cachedPackers.clear();
+
+        FindPackers(outputDir, namePrefix, ".json", cachedPackers);
+
+        ofstream json(outputName + ".json");
+        json << '{' << endl;
+        json << "\t\"trim\": " << (options.trim ? "true" : "false") << ',' << endl;
+        json << "\t\"rotate\": " << (options.rotate ? "true" : "false") << ',' << endl;
+        json << "\t\"textures\": {" << endl;
+        for (int i = 0; i < cachedPackers.size(); ++i)
+        {
+            ifstream jsonCache(cachedPackers[i]);
+            json << jsonCache.rdbuf();
+            jsonCache.close();
+            if (i != cachedPackers.size() - 1)
                 json << ',';
             json << endl;
         }
-        json << "\t]" << endl;
-        json << '}';
+        json << "\t}" << endl;
+        json << '}' << endl;
+        json.close();
     }
-    
-    //Save the new hash
-    SaveHash(newHash, outputDir + name + ".hash");
-    
+
     return EXIT_SUCCESS;
 }

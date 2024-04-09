@@ -1,19 +1,19 @@
 /*
- 
+
  MIT License
- 
+
  Copyright (c) 2017 Chevy Ray Johnston
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included in all
  copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,97 +21,101 @@
  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
- 
+
  */
 
 #include "hash.hpp"
+
+#include <chrono>
+#include <filesystem>
 #include <fstream>
-#include <vector>
 #include <iostream>
 #include <sstream>
-#include "tinydir.h"
-#include "str.hpp"
+#include <vector>
 
-template <class T>
-void HashCombine(std::size_t& hash, const T& v)
+using namespace std;
+using namespace filesystem;
+
+void HashCombine(uint64_t &hash, uint64_t v)
 {
-    std::hash<T> hasher;
-    hash ^= hasher(v) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-}
-void HashCombine(std::size_t& hash, size_t v)
-{
-    hash ^= v + 0x9e3779b9 + (hash<<6) + (hash>>2);
+    hash ^= v + 0x9e3779b9 + (hash << 6) + (hash >> 2);
 }
 
-void HashString(size_t& hash, const string& str)
+void HashData(uint64_t &hash, const char *data, uint64_t size)
 {
-    HashCombine(hash, str);
+    uint64_t seed = 131;
+    uint64_t v = 0;
+    for (int i = 0; i < size; ++i)
+    {
+        v = v * seed + data[i];
+    }
+    v &= 0x7fffffff;
+
+    HashCombine(hash, v);
 }
 
-void HashFile(size_t& hash, const string& file)
+void HashString(uint64_t &hash, const string &str)
 {
+    HashData(hash, str.data(), str.size());
+}
+
+void HashFile(uint64_t &hash, const string &file, bool checkTime)
+{
+    if (checkTime)
+    {
+        auto time = last_write_time(file);
+        HashCombine(hash, chrono::duration_cast<chrono::seconds>(time.time_since_epoch()).count());
+        return;
+    }
     ifstream stream(file, ios::binary | ios::ate);
     streamsize size = stream.tellg();
     stream.seekg(0, ios::beg);
-    vector<char> buffer(size + 1);
+    vector<char> buffer(size);
     if (!stream.read(buffer.data(), size))
     {
         cerr << "failed to read file: " << file << endl;
         exit(EXIT_FAILURE);
     }
-    buffer[size] = '\0';
-    string text(buffer.begin(), buffer.end());
-    HashCombine(hash, text);
+    HashData(hash, buffer.data(), size);
 }
 
-void HashFiles(size_t& hash, const string& root)
+static void HashFile(uint64_t &hash, const directory_entry &file, bool checkTime)
 {
-    static string dot1 = ".";
-    static string dot2 = "..";
-    
-    tinydir_dir dir;
-    tinydir_open(&dir, StrToPath(root).data());
-    
-    while (dir.has_next)
+    if (checkTime)
     {
-        tinydir_file file;
-        tinydir_readfile(&dir, &file);
-        
-        if (file.is_dir)
-        {
-            if (dot1 != PathToStr(file.name) && dot2 != PathToStr(file.name))
-                HashFiles(hash, PathToStr(file.path));
-        }
-        else if (PathToStr(file.extension) == "png")
-            HashFile(hash, PathToStr(file.path));
-        
-        tinydir_next(&dir);
+        auto time = file.last_write_time();
+        HashCombine(hash, chrono::duration_cast<chrono::seconds>(time.time_since_epoch()).count());
     }
-    
-    tinydir_close(&dir);
+    else
+        HashFile(hash, file.path().string(), false);
 }
 
-void HashData(size_t& hash, const char* data, size_t size)
+void HashFiles(uint64_t &hash, const string &root, bool checkTime)
 {
-    string str(data, size);
-    HashCombine(hash, str);
+    for (const auto &entry : directory_iterator(root))
+    {
+        if (entry.is_directory())
+        {
+            HashString(hash, entry.path().string());
+            HashFiles(hash, entry.path().string(), checkTime);
+        }
+        else
+            HashFile(hash, entry, checkTime);
+    }
 }
 
-bool LoadHash(size_t& hash, const string& file)
+bool LoadHash(uint64_t &hash, const string &file)
 {
     ifstream stream(file);
-    if (stream)
-    {
-        stringstream ss;
-        ss << stream.rdbuf();
-        ss >> hash;
-        return true;
-    }
-    return false;
+    if (!stream)
+        return false;
+
+    stream >> hash;
+    return true;
 }
 
-void SaveHash(size_t hash, const string& file)
+void SaveHash(uint64_t hash, const string &file)
 {
     ofstream stream(file);
-    stream << hash;
+    stream << hash << endl;
 }
